@@ -46,12 +46,13 @@ export default async function BlogPage() {
                 <article className="overflow-hidden rounded-2xl bg-card border border-border/50 transition-all duration-300 hover:shadow-lg hover:-translate-y-0.5">
                   {/* Cover image */}
                   {post.cover_image && (
-                    <div className="relative aspect-[21/9] overflow-hidden">
+                    <div className="relative aspect-[16/9] overflow-hidden">
                       <Image
                         src={post.cover_image}
                         alt={post.title}
                         fill
-                        className="object-cover transition-transform duration-700 group-hover:scale-105"
+                        sizes="(max-width: 768px) 100vw, 720px"
+                        className="object-cover object-center transition-transform duration-700 group-hover:scale-[1.03]"
                       />
                     </div>
                   )}
