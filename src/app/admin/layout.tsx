@@ -1,8 +1,10 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { Loader2 } from "lucide-react";
 import {
   Package,
   FolderOpen,
@@ -31,11 +33,32 @@ export default function AdminLayout({
   const pathname = usePathname();
   const router = useRouter();
 
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    const supabase = createClient();
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (!user) {
+        router.push("/login?redirectTo=" + pathname);
+      } else {
+        setAuthChecked(true);
+      }
+    });
+  }, [router, pathname]);
+
   async function handleLogout() {
     const supabase = createClient();
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();
+  }
+
+  if (!authChecked) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      </div>
+    );
   }
 
   return (
