@@ -37,7 +37,7 @@ export default function AdminLayout({
 
   useEffect(() => {
     const supabase = createClient();
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(({ data: { user } }: { data: { user: unknown } }) => {
       if (!user) {
         router.push("/login?redirectTo=" + pathname);
       } else {
