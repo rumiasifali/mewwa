@@ -3,6 +3,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { getPostBySlug } from "@/lib/data";
 import { ArrowLeft, Calendar, Clock } from "lucide-react";
+import { ImageLightbox } from "@/components/shared/image-lightbox";
 
 export const revalidate = 60;
 
@@ -64,15 +65,18 @@ export default async function BlogPostPage({
           </header>
 
           {post.cover_image && (
-            <div className="relative aspect-[16/9] overflow-hidden rounded-2xl mt-8">
-              <Image
-                src={post.cover_image}
-                alt={post.title}
-                fill
-                className="object-cover"
-                priority
-              />
-            </div>
+            <ImageLightbox src={post.cover_image} alt={post.title}>
+              <div className="relative aspect-[16/9] overflow-hidden rounded-2xl mt-8">
+                <Image
+                  src={post.cover_image}
+                  alt={post.title}
+                  fill
+                  sizes="(max-width: 768px) 100vw, 720px"
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            </ImageLightbox>
           )}
 
           {/* Rendered HTML content from rich editor */}
