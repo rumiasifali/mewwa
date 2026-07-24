@@ -1,16 +1,24 @@
-"use client";
-
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { SITE_CONFIG, getWhatsAppLink } from "@/lib/constants";
+import { getSettings } from "@/lib/data";
 import { AnimatedSection, slideInLeft, slideInRight } from "@/components/shared/motion";
-import { MessageCircle, Mail, Phone, MapPin, Send } from "lucide-react";
+import { MessageCircle, Mail, Phone, MapPin } from "lucide-react";
+import { ContactForm } from "./contact-form";
 
-export default function ContactPage() {
-  const [submitted, setSubmitted] = useState(false);
+export const revalidate = 60;
+
+export default async function ContactPage() {
+  const settings = await getSettings();
+
+  const rawNumber = settings?.whatsapp_number ?? "923001234567";
+  // Normalize to international format: strip +, spaces, dashes
+  // If starts with 0, replace with country code 92 (Pakistan)
+  const whatsappNumber = rawNumber
+    .replace(/[\s\-()]/g, "")
+    .replace(/^\+/, "")
+    .replace(/^0/, "92");
+  const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hi, I'd like to know more about your products.")}`;
+  const phone = settings?.phone ?? "+92 300 1234567";
+  const email = settings?.email ?? "hello@qaaq.pk";
+  const address = settings?.address ?? "Pakistan";
 
   return (
     <div className="pt-24 sm:pt-28 pb-24">
@@ -32,88 +40,7 @@ export default function ContactPage() {
         <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
           {/* Contact Form */}
           <AnimatedSection variants={slideInLeft} className="lg:col-span-3">
-            {submitted ? (
-              <div className="rounded-2xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 p-8 text-center">
-                <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
-                  <Send className="w-7 h-7 text-green-600" />
-                </div>
-                <h3 className="text-xl font-semibold">Message Sent!</h3>
-                <p className="mt-2 text-muted-foreground">
-                  We&apos;ll get back to you within 24 hours. For faster
-                  response, reach out on WhatsApp.
-                </p>
-                <Button
-                  asChild
-                  className="mt-6 rounded-full bg-green-600 hover:bg-green-700"
-                >
-                  <a
-                    href={getWhatsAppLink()}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <MessageCircle className="w-4 h-4 mr-2" />
-                    Chat on WhatsApp
-                  </a>
-                </Button>
-              </div>
-            ) : (
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  setSubmitted(true);
-                }}
-                className="space-y-6"
-              >
-                <div className="grid sm:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Your name"
-                      required
-                      className="h-12 rounded-xl"
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      required
-                      className="h-12 rounded-xl"
-                    />
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="subject">Subject</Label>
-                  <Input
-                    id="subject"
-                    placeholder="What's this about?"
-                    required
-                    className="h-12 rounded-xl"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="message">Message</Label>
-                  <Textarea
-                    id="message"
-                    placeholder="Tell us more..."
-                    required
-                    rows={6}
-                    className="rounded-xl resize-none"
-                  />
-                </div>
-                <Button
-                  type="submit"
-                  size="lg"
-                  className="rounded-full px-8 h-12"
-                >
-                  <Send className="w-4 h-4 mr-2" />
-                  Send Message
-                </Button>
-              </form>
-            )}
+            <ContactForm whatsappLink={whatsappLink} />
           </AnimatedSection>
 
           {/* Contact Info */}
@@ -121,7 +48,7 @@ export default function ContactPage() {
             <div className="space-y-6">
               {/* WhatsApp Card */}
               <a
-                href={getWhatsAppLink()}
+                href={whatsappLink}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="group block p-6 rounded-2xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 hover:shadow-lg transition-all duration-300"
@@ -150,10 +77,10 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-medium text-sm">Phone</h3>
                     <a
-                      href={`tel:${SITE_CONFIG.phone}`}
+                      href={`tel:${phone}`}
                       className="text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {SITE_CONFIG.phone}
+                      {phone}
                     </a>
                   </div>
                 </div>
@@ -165,10 +92,10 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-medium text-sm">Email</h3>
                     <a
-                      href={`mailto:${SITE_CONFIG.email}`}
+                      href={`mailto:${email}`}
                       className="text-muted-foreground hover:text-foreground transition-colors"
                     >
-                      {SITE_CONFIG.email}
+                      {email}
                     </a>
                   </div>
                 </div>
@@ -179,9 +106,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-medium text-sm">Location</h3>
-                    <p className="text-muted-foreground">
-                      {SITE_CONFIG.address}
-                    </p>
+                    <p className="text-muted-foreground">{address}</p>
                   </div>
                 </div>
               </div>
@@ -191,7 +116,9 @@ export default function ContactPage() {
                 <h3 className="font-semibold mb-3">Business Hours</h3>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Monday - Saturday</span>
+                    <span className="text-muted-foreground">
+                      Monday - Saturday
+                    </span>
                     <span className="font-medium">9:00 AM - 9:00 PM</span>
                   </div>
                   <div className="flex justify-between">

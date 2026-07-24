@@ -188,15 +188,17 @@
 
 /* Glass morphism utility */
 .glass {
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  background: oklch(0.99 0.005 85 / 70%);
-  border: 1px solid oklch(0.90 0.015 85 / 50%);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  background: oklch(0.99 0.005 85 / 96%);
+  border-bottom: 1px solid oklch(0.88 0.015 85 / 80%);
+  box-shadow: 0 1px 16px 0 oklch(0 0 0 / 6%);
 }
 
 .dark .glass {
-  background: oklch(0.16 0.018 60 / 70%);
-  border: 1px solid oklch(0.26 0.02 60 / 50%);
+  background: oklch(0.13 0.018 60 / 96%);
+  border-bottom: 1px solid oklch(0.24 0.02 60 / 60%);
+  box-shadow: 0 1px 16px 0 oklch(0 0 0 / 20%);
 }
 
 /* Perspective utility for 3D card effects */

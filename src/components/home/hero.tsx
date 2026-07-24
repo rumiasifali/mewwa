@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { ArrowRight, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -9,38 +10,20 @@ import { getWhatsAppLink } from "@/lib/constants";
 export function Hero() {
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background — gradient with animated mesh */}
-      <div className="absolute inset-0 bg-[#1a1208]">
-        {/* Warm gradient overlay */}
-        <div className="absolute inset-0 bg-gradient-to-br from-amber-950/90 via-stone-950/80 to-amber-900/60 gradient-animate" />
-
-        {/* Decorative circles */}
-        <motion.div
-          animate={{
-            scale: [1, 1.2, 1],
-            opacity: [0.1, 0.15, 0.1],
-          }}
-          transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -top-1/4 -right-1/4 w-[800px] h-[800px] rounded-full bg-gradient-to-br from-amber-500/20 to-transparent blur-3xl"
+      {/* Background — hero image */}
+      <div className="absolute inset-0">
+        <Image
+          src="/hero-banner.png"
+          alt="QAAQ Premium Dry Fruits — Pure Goodness from the Mountains of Pakistan"
+          fill
+          className="object-cover object-center"
+          priority
+          quality={90}
         />
-        <motion.div
-          animate={{
-            scale: [1.2, 1, 1.2],
-            opacity: [0.08, 0.12, 0.08],
-          }}
-          transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-          className="absolute -bottom-1/4 -left-1/4 w-[600px] h-[600px] rounded-full bg-gradient-to-tr from-amber-600/15 to-transparent blur-3xl"
-        />
-
-        {/* Grid pattern */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              "linear-gradient(rgba(255,255,255,0.1) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.1) 1px, transparent 1px)",
-            backgroundSize: "64px 64px",
-          }}
-        />
+        {/* Left-heavy overlay so our text stays readable, right stays open */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
+        {/* Bottom fade into page */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
       </div>
 
       {/* Content */}
@@ -143,8 +126,8 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Bottom gradient fade */}
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-background to-transparent" />
+      {/* Fade into page background */}
+      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
     </section>
   );
 }

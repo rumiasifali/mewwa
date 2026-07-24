@@ -105,6 +105,21 @@ export async function getPostBySlug(slug: string) {
   return data;
 }
 
+export async function getSettings() {
+  const supabase = await createClient();
+  const { data } = await supabase.from("site_settings").select("*").maybeSingle();
+  return data as {
+    site_name: string;
+    tagline: string;
+    whatsapp_number: string;
+    email: string;
+    phone: string;
+    address: string;
+    currency: string;
+    social_links: { instagram?: string; facebook?: string };
+  } | null;
+}
+
 // Map DB row to Product type
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function mapProduct(row: any): Product {
