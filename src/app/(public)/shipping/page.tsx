@@ -1,144 +1,295 @@
-"use client";
+import { ShippingFaq } from "./shipping-faq";
 
-import { AnimatedSection, fadeUp, staggerContainer, motion } from "@/components/shared/motion";
-import { Truck, Globe, Package, Clock, Shield, CreditCard } from "lucide-react";
-
-const domesticZones = [
-  { zone: "Same City", time: "1-2 days", cost: "PKR 200" },
-  { zone: "Major Cities", time: "2-3 days", cost: "PKR 300" },
-  { zone: "Other Areas", time: "3-5 days", cost: "PKR 350-450" },
+const domesticRows = [
+  { zone: "Punjab & KPK", weight: "Up to 5kg", rate: "PKR 250", eta: "2\u20133 days" },
+  { zone: "Sindh & Balochistan", weight: "Up to 5kg", rate: "PKR 350", eta: "3\u20135 days" },
+  { zone: "GB & AJK", weight: "Up to 5kg", rate: "PKR 300", eta: "3\u20134 days" },
 ];
 
-const internationalZones = [
-  { zone: "UAE & Gulf", time: "5-7 days", cost: "Contact us" },
-  { zone: "UK & Europe", time: "7-12 days", cost: "Contact us" },
-  { zone: "USA & Canada", time: "10-14 days", cost: "Contact us" },
-  { zone: "Other Countries", time: "10-21 days", cost: "Contact us" },
+const internationalRows = [
+  { zone: "UAE & Gulf", weight: "Up to 2kg", rate: "PKR 2,500", eta: "5\u20137 days" },
+  { zone: "UK & Europe", weight: "Up to 2kg", rate: "PKR 4,500", eta: "7\u201312 days" },
+  { zone: "USA & Canada", weight: "Up to 2kg", rate: "PKR 5,000", eta: "7\u201314 days" },
 ];
+
+const packingSteps = [
+  {
+    step: "01",
+    title: "Weighed to order",
+    body: "Every item is weighed fresh per your order\u2014no pre-packed, shelf-sitting stock.",
+  },
+  {
+    step: "02",
+    title: "Vacuum sealed",
+    body: "Air is removed to lock in flavour and extend shelf life before shipping.",
+  },
+  {
+    step: "03",
+    title: "Nitrogen flushed",
+    body: "A nitrogen flush replaces residual oxygen, keeping nuts crisp and oils stable.",
+  },
+  {
+    step: "04",
+    title: "Double-boxed",
+    body: "Sealed pouches go into a rigid inner box, then a padded outer carton for transit.",
+  },
+];
+
+const headerCols = ["Zone", "Weight", "Rate", "ETA"];
+
+const headerCellStyle: React.CSSProperties = {
+  padding: "12px 16px",
+  fontSize: 10,
+  letterSpacing: ".14em",
+  textTransform: "uppercase",
+  fontWeight: 700,
+  color: "#7C7268",
+};
+
+const dataCellStyle: React.CSSProperties = {
+  padding: "14px 16px",
+  fontSize: 13.5,
+  color: "#2A211A",
+};
+
+function RateTable({
+  rows,
+}: {
+  rows: { zone: string; weight: string; rate: string; eta: string }[];
+}) {
+  return (
+    <div style={{ marginTop: 20 }}>
+      {/* Header */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr 1fr",
+          background: "#F5F1EA",
+        }}
+      >
+        {headerCols.map((col) => (
+          <div key={col} style={headerCellStyle}>
+            {col}
+          </div>
+        ))}
+      </div>
+      {/* Rows */}
+      {rows.map((row) => (
+        <div
+          key={row.zone}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr 1fr 1fr",
+            borderBottom: "1px solid #F0EBE3",
+          }}
+        >
+          <div style={{ ...dataCellStyle, fontWeight: 600 }}>{row.zone}</div>
+          <div style={dataCellStyle}>{row.weight}</div>
+          <div style={{ ...dataCellStyle, fontWeight: 600 }}>{row.rate}</div>
+          <div style={dataCellStyle}>{row.eta}</div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function ShippingPage() {
   return (
-    <div className="pt-24 sm:pt-28 pb-24">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <AnimatedSection>
-          <p className="text-sm font-medium text-primary uppercase tracking-wider">
-            Shipping Info
-          </p>
-          <h1 className="mt-3 text-4xl sm:text-5xl font-bold tracking-tight">
-            Delivery & Shipping
-          </h1>
-          <p className="mt-4 text-lg text-muted-foreground max-w-2xl">
-            We ship across Pakistan and internationally. Every order is packed
-            fresh with protective packaging to ensure your dry fruits arrive in
-            perfect condition.
-          </p>
-        </AnimatedSection>
+    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "44px 28px 110px" }}>
+      {/* ── Header ── */}
+      <div>
+        <p
+          style={{
+            fontSize: 12,
+            fontWeight: 600,
+            textTransform: "uppercase",
+            letterSpacing: ".14em",
+            color: "#C8922E",
+            margin: 0,
+          }}
+        >
+          Delivery
+        </p>
+        <h1
+          style={{
+            fontSize: "clamp(34px, 4.2vw, 52px)",
+            fontWeight: 800,
+            letterSpacing: "-.045em",
+            color: "#1A1512",
+            lineHeight: 1.1,
+            marginTop: 12,
+          }}
+        >
+          Shipping &amp; rates
+        </h1>
+        <p
+          style={{
+            fontSize: 15,
+            color: "#4A4139",
+            maxWidth: 520,
+            lineHeight: 1.65,
+            marginTop: 12,
+          }}
+        >
+          We ship across Pakistan and internationally. Every order is packed
+          fresh to ensure your dry fruits arrive in perfect condition.
+        </p>
+      </div>
 
+      {/* ── Zone panels ── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: "1px",
+          background: "#E7E1D7",
+          border: "1px solid #E7E1D7",
+          marginTop: 32,
+          borderRadius: 2,
+          overflow: "hidden",
+        }}
+      >
         {/* Domestic */}
-        <AnimatedSection className="mt-16">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Truck className="w-5 h-5 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold">Domestic Shipping</h2>
-          </div>
-          <div className="rounded-2xl bg-card border border-border/50 overflow-hidden">
-            <div className="grid grid-cols-3 p-4 bg-secondary/50 text-sm font-medium text-muted-foreground">
-              <span>Zone</span>
-              <span>Delivery Time</span>
-              <span>Shipping Cost</span>
-            </div>
-            {domesticZones.map((z) => (
-              <div
-                key={z.zone}
-                className="grid grid-cols-3 p-4 border-t border-border/50 text-sm"
-              >
-                <span className="font-medium">{z.zone}</span>
-                <span className="text-muted-foreground">{z.time}</span>
-                <span className="font-medium">{z.cost}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Cash on Delivery (COD) is available for all domestic orders.
-            Free shipping on orders above PKR 5,000.
+        <div style={{ background: "#FBF9F5", padding: 32 }}>
+          <p
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: ".14em",
+              color: "#C8922E",
+              margin: 0,
+            }}
+          >
+            Domestic
           </p>
-        </AnimatedSection>
+          <h3
+            style={{
+              fontSize: 24,
+              fontWeight: 750,
+              color: "#1A1512",
+              marginTop: 8,
+            }}
+          >
+            Pakistan
+          </h3>
+          <RateTable rows={domesticRows} />
+          <div
+            style={{
+              fontSize: 13,
+              color: "#4E7A3E",
+              background: "#E6EFE0",
+              padding: "12px 16px",
+              marginTop: 16,
+              borderRadius: 2,
+            }}
+          >
+            Free shipping on orders over PKR 5,000
+          </div>
+        </div>
 
         {/* International */}
-        <AnimatedSection className="mt-16">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Globe className="w-5 h-5 text-primary" />
-            </div>
-            <h2 className="text-2xl font-bold">International Shipping</h2>
-          </div>
-          <div className="rounded-2xl bg-card border border-border/50 overflow-hidden">
-            <div className="grid grid-cols-3 p-4 bg-secondary/50 text-sm font-medium text-muted-foreground">
-              <span>Destination</span>
-              <span>Estimated Time</span>
-              <span>Cost</span>
-            </div>
-            {internationalZones.map((z) => (
-              <div
-                key={z.zone}
-                className="grid grid-cols-3 p-4 border-t border-border/50 text-sm"
-              >
-                <span className="font-medium">{z.zone}</span>
-                <span className="text-muted-foreground">{z.time}</span>
-                <span className="font-medium">{z.cost}</span>
-              </div>
-            ))}
-          </div>
-          <p className="mt-4 text-sm text-muted-foreground">
-            International shipping costs depend on weight and destination. WhatsApp
-            us for an exact quote before ordering.
+        <div style={{ background: "#FBF9F5", padding: 32 }}>
+          <p
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: ".14em",
+              color: "#C8922E",
+              margin: 0,
+            }}
+          >
+            International
           </p>
-        </AnimatedSection>
+          <h3
+            style={{
+              fontSize: 24,
+              fontWeight: 750,
+              color: "#1A1512",
+              marginTop: 8,
+            }}
+          >
+            Worldwide
+          </h3>
+          <RateTable rows={internationalRows} />
+          <div
+            style={{
+              fontSize: 13,
+              color: "#7C7268",
+              background: "#F5F1EA",
+              padding: "12px 16px",
+              marginTop: 16,
+              borderRadius: 2,
+            }}
+          >
+            Rates vary by weight. WhatsApp us for an exact quote.
+          </div>
+        </div>
+      </div>
 
-        {/* Features */}
-        <motion.div
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          variants={staggerContainer}
-          className="mt-16 grid sm:grid-cols-2 lg:grid-cols-3 gap-6"
+      {/* ── Packing steps ── */}
+      <div style={{ marginTop: 64 }}>
+        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1A1512" }}>
+          How we pack
+        </h2>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(4, 1fr)",
+            gap: "1px",
+            background: "#E7E1D7",
+            marginTop: 24,
+            borderRadius: 2,
+            overflow: "hidden",
+          }}
         >
-          {[
-            {
-              icon: Package,
-              title: "Secure Packaging",
-              description:
-                "Every order is packed in sealed, food-grade pouches with bubble wrap and rigid boxes for transit protection.",
-            },
-            {
-              icon: Clock,
-              title: "Same-Day Dispatch",
-              description:
-                "Orders placed before 2 PM are dispatched the same day. We don't let your order sit around.",
-            },
-            {
-              icon: Shield,
-              title: "Freshness Guarantee",
-              description:
-                "Not satisfied with the freshness? We'll replace it or refund you — no questions asked.",
-            },
-          ].map((f, i) => (
-            <motion.div
-              key={f.title}
-              variants={fadeUp}
-              custom={i}
-              className="p-6 rounded-2xl bg-card border border-border/50"
+          {packingSteps.map((step) => (
+            <div
+              key={step.step}
+              style={{ background: "#FBF9F5", padding: 24 }}
             >
-              <f.icon className="w-6 h-6 text-primary mb-4" />
-              <h3 className="font-semibold">{f.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-                {f.description}
+              <span
+                style={{
+                  fontSize: 32,
+                  fontWeight: 800,
+                  color: "rgba(200,146,46,.8)",
+                  lineHeight: 1,
+                }}
+              >
+                {step.step}
+              </span>
+              <p
+                style={{
+                  fontSize: 16,
+                  fontWeight: 650,
+                  color: "#1A1512",
+                  marginTop: 12,
+                }}
+              >
+                {step.title}
               </p>
-            </motion.div>
+              <p
+                style={{
+                  fontSize: 13,
+                  lineHeight: 1.6,
+                  color: "#7C7268",
+                  marginTop: 6,
+                }}
+              >
+                {step.body}
+              </p>
+            </div>
           ))}
-        </motion.div>
+        </div>
+      </div>
+
+      {/* ── FAQ accordion ── */}
+      <div style={{ marginTop: 64 }}>
+        <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1A1512" }}>
+          Common questions
+        </h2>
+        <ShippingFaq />
       </div>
     </div>
   );

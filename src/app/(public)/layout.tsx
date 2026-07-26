@@ -1,4 +1,5 @@
-import { Navbar } from "@/components/layout/navbar";
+import { AnnouncementBar } from "@/components/layout/announcement-bar";
+import { SiteHeader } from "@/components/layout/site-header";
 import { Footer } from "@/components/layout/footer";
 
 export default function PublicLayout({
@@ -8,9 +9,11 @@ export default function PublicLayout({
 }) {
   return (
     <>
-      <div className="grain-overlay" aria-hidden="true" />
-      <Navbar />
-      <main className="flex-1">{children}</main>
+      <AnnouncementBar />
+      <SiteHeader />
+      <main className="flex-1" style={{ paddingTop: 100 }}>
+        {children}
+      </main>
       <Footer />
     </>
   );

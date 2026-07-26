@@ -2,122 +2,261 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "framer-motion";
-import { ArrowRight, Sparkles } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { motion } from "@/components/shared/motion";
+import { ArrowRight } from "lucide-react";
 import { getWhatsAppLink } from "@/lib/constants";
+
+const ease = [0.22, 1, 0.36, 1] as const;
+
+const fadeUpItem = (delay: number) => ({
+  initial: { opacity: 0, y: 18 },
+  animate: { opacity: 1, y: 0 },
+  transition: { delay, duration: 0.9, ease },
+});
+
+const fadeInItem = (delay: number) => ({
+  initial: { opacity: 0 },
+  animate: { opacity: 1 },
+  transition: { delay, duration: 0.8, ease },
+});
+
+const STATS = [
+  { value: "12+", label: "Products" },
+  { value: "5", label: "Valleys" },
+  { value: "48h", label: "Pack to ship" },
+  { value: "4.8\u2605", label: "Rating" },
+];
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background — hero image */}
-      <div className="absolute inset-0">
-        <Image
-          src="/hero-banner.png"
-          alt="QAAQ Premium Dry Fruits — Pure Goodness from the Mountains of Pakistan"
-          fill
-          className="object-cover object-center"
-          priority
-          quality={90}
-        />
-        {/* Left-heavy overlay so our text stays readable, right stays open */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/20" />
-        {/* Bottom fade into page */}
-        <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
-      </div>
+    <section
+      className="relative flex items-center overflow-hidden"
+      style={{
+        minHeight: 760,
+        height: "100vh",
+        maxHeight: 900,
+        backgroundColor: "#1A1512",
+      }}
+    >
+      {/* Background image */}
+      <Image
+        src="/hero-banner.png"
+        alt="QAAQ Premium Dry Fruits — Mountains of Pakistan"
+        fill
+        className="object-cover"
+        priority
+        quality={90}
+      />
+
+      {/* Directional dark overlay */}
+      <div
+        className="absolute inset-0"
+        style={{
+          background:
+            "linear-gradient(100deg, rgba(15,12,10,.94) 0%, rgba(15,12,10,.82) 34%, rgba(15,12,10,.34) 62%, rgba(15,12,10,.15) 100%)",
+        }}
+      />
+
+      {/* Bottom gradient */}
+      <div
+        className="absolute bottom-0 left-0 right-0"
+        style={{
+          height: 180,
+          background: "linear-gradient(to top, rgba(15,12,10,.9), transparent)",
+        }}
+      />
 
       {/* Content */}
-      <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-32 sm:py-40">
-        <div className="max-w-3xl">
-          {/* Badge */}
+      <div
+        className="relative z-10 w-full mx-auto flex items-center"
+        style={{ maxWidth: 1400, padding: "0 28px" }}
+      >
+        <div style={{ maxWidth: 760 }}>
+          {/* Eyebrow */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.6 }}
+            className="flex items-center gap-3"
+            {...fadeInItem(0.1)}
           >
-            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 text-white/80 text-sm">
-              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
-              Handpicked & Premium Quality
+            <span
+              style={{
+                width: 52,
+                height: 1,
+                backgroundColor: "#C8922E",
+                display: "block",
+                flexShrink: 0,
+              }}
+            />
+            <span
+              style={{
+                fontSize: 11,
+                letterSpacing: ".36em",
+                textTransform: "uppercase",
+                color: "#C8922E",
+                fontWeight: 600,
+              }}
+            >
+              Est. 2023 &middot; Gilgit-Baltistan
             </span>
           </motion.div>
 
-          {/* Headline */}
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-            className="mt-8 text-5xl sm:text-6xl lg:text-7xl xl:text-8xl font-bold text-white leading-[0.95] tracking-tight"
+          {/* H1 */}
+          <h1
+            className="mt-7"
+            style={{
+              fontSize: "clamp(52px, 6.6vw, 104px)",
+              lineHeight: 0.92,
+              letterSpacing: "-.045em",
+              fontWeight: 800,
+              color: "white",
+            }}
           >
-            From the
-            <br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-200 via-amber-300 to-amber-500">
-              Mountains
-            </span>
-            <br />
-            to Your Doorstep
-          </motion.h1>
+            <motion.span className="block" {...fadeUpItem(0.2)}>
+              The mountains,
+            </motion.span>
+            <motion.span className="block" {...fadeUpItem(0.34)}>
+              weighed and sealed
+            </motion.span>
+            <motion.span
+              className="block"
+              style={{
+                fontFamily: "'Instrument Serif', serif",
+                fontStyle: "italic",
+                fontWeight: 400,
+                color: "#E7C079",
+                letterSpacing: "-.02em",
+              }}
+              {...fadeUpItem(0.48)}
+            >
+              the day you order.
+            </motion.span>
+          </h1>
 
-          {/* Subtitle */}
+          {/* Paragraph */}
           <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6, duration: 0.6 }}
-            className="mt-6 text-lg sm:text-xl text-white/60 max-w-xl leading-relaxed"
+            className="mt-7"
+            style={{
+              maxWidth: 470,
+              fontSize: 17,
+              lineHeight: 1.65,
+              color: "rgba(255,255,255,.66)",
+            }}
+            {...fadeUpItem(0.62)}
           >
-            Premium dry fruits and nuts sourced from the finest orchards of
-            Afghanistan, Iran, and Pakistan&apos;s northern valleys. Quality you
-            can taste in every bite.
+            Mamra almonds from Afghan orchards. Akbari pistachios from
+            Rafsanjan. Hunza apricots dried on rooftops at 8,000&nbsp;feet.
+            Nothing sits in a warehouse waiting for you.
           </motion.p>
 
-          {/* CTAs */}
+          {/* CTA Buttons */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8, duration: 0.6 }}
-            className="mt-10 flex flex-col sm:flex-row gap-4"
+            className="mt-9 flex items-center"
+            style={{ gap: 12 }}
+            {...fadeUpItem(0.76)}
           >
-            <Button
-              asChild
-              size="lg"
-              className="rounded-full bg-white text-stone-900 hover:bg-white/90 text-base px-8 h-12 sm:h-14 font-semibold shadow-2xl shadow-amber-900/30"
+            {/* Primary */}
+            <Link
+              href="/products"
+              className="qaaq-press inline-flex items-center justify-center"
+              style={{
+                height: 56,
+                padding: "0 30px",
+                backgroundColor: "white",
+                color: "#1A1512",
+                fontSize: 15,
+                fontWeight: 600,
+                borderRadius: 3,
+                textDecoration: "none",
+                gap: 8,
+              }}
             >
-              <Link href="/products">
-                Explore Collection
-                <ArrowRight className="w-4 h-4 ml-2" />
-              </Link>
-            </Button>
-            <Button
-              asChild
-              size="lg"
-              variant="outline"
-              className="rounded-full border-white/20 text-white hover:bg-white/10 text-base px-8 h-12 sm:h-14 font-medium bg-transparent"
+              Shop the collection
+              <ArrowRight size={16} strokeWidth={2.2} />
+            </Link>
+
+            {/* Secondary — WhatsApp */}
+            <a
+              href={getWhatsAppLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="qaaq-press inline-flex items-center justify-center"
+              style={{
+                height: 56,
+                padding: "0 26px",
+                border: "1px solid rgba(255,255,255,.26)",
+                color: "white",
+                backgroundColor: "rgba(255,255,255,.06)",
+                fontSize: 15,
+                fontWeight: 600,
+                borderRadius: 3,
+                textDecoration: "none",
+                gap: 10,
+              }}
             >
-              <a href={getWhatsAppLink()} target="_blank" rel="noopener noreferrer">
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z" />
-                </svg>
-                Order on WhatsApp
-              </a>
-            </Button>
+              {/* Green pulse dot */}
+              <span
+                className="relative flex-shrink-0"
+                style={{ width: 7, height: 7 }}
+              >
+                <span
+                  className="absolute inset-0 animate-ping"
+                  style={{
+                    borderRadius: "50%",
+                    backgroundColor: "#3FD97F",
+                    opacity: 0.6,
+                  }}
+                />
+                <span
+                  className="relative block"
+                  style={{
+                    width: 7,
+                    height: 7,
+                    borderRadius: "50%",
+                    backgroundColor: "#3FD97F",
+                    boxShadow: "0 0 8px 2px rgba(63,217,127,.45)",
+                  }}
+                />
+              </span>
+              Ask us on WhatsApp
+            </a>
           </motion.div>
 
-          {/* Stats */}
+          {/* Stats row */}
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 1.2, duration: 0.8 }}
-            className="mt-16 flex items-center gap-8 sm:gap-12"
+            className="mt-12 flex items-start flex-wrap"
+            {...fadeInItem(1)}
           >
-            {[
-              { value: "10+", label: "Premium Products" },
-              { value: "100%", label: "Natural & Fresh" },
-              { value: "PK & Global", label: "Shipping" },
-            ].map((stat) => (
-              <div key={stat.label}>
-                <div className="text-2xl sm:text-3xl font-bold text-white">
+            {STATS.map((stat, i) => (
+              <div
+                key={stat.label}
+                style={{
+                  borderRight:
+                    i < STATS.length - 1
+                      ? "1px solid rgba(255,255,255,.14)"
+                      : "none",
+                  paddingRight: i < STATS.length - 1 ? 38 : 0,
+                  marginRight: i < STATS.length - 1 ? 38 : 0,
+                }}
+              >
+                <div
+                  style={{
+                    fontSize: 27,
+                    fontWeight: 700,
+                    color: "white",
+                    letterSpacing: "-.03em",
+                  }}
+                >
                   {stat.value}
                 </div>
-                <div className="text-xs sm:text-sm text-white/40 mt-1">
+                <div
+                  style={{
+                    fontSize: 11,
+                    letterSpacing: ".16em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,.42)",
+                    fontWeight: 500,
+                    marginTop: 6,
+                  }}
+                >
                   {stat.label}
                 </div>
               </div>
@@ -126,8 +265,117 @@ export function Hero() {
         </div>
       </div>
 
-      {/* Fade into page background */}
-      <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-background to-transparent" />
+      {/* Today's pick floating card — hidden below 1200px */}
+      <style>{`.hero-pick{display:none}@media(min-width:1200px){.hero-pick{display:block}}`}</style>
+      <motion.div
+        className="hero-pick absolute"
+        style={{
+          right: 28,
+          bottom: 34,
+          width: 262,
+          backgroundColor: "rgba(251,249,245,.96)",
+          backdropFilter: "blur(14px)",
+          WebkitBackdropFilter: "blur(14px)",
+          borderRadius: 4,
+          padding: 16,
+          boxShadow: "0 24px 60px -20px rgba(0,0,0,.5)",
+        }}
+        {...fadeUpItem(1.1)}
+      >
+        <div className="flex items-start" style={{ gap: 12 }}>
+          {/* Product thumbnail placeholder */}
+          <div
+            className="flex-shrink-0"
+            style={{
+              width: 56,
+              height: 56,
+              backgroundColor: "#EDE7DC",
+              border: "1px solid #E0D8CA",
+              borderRadius: 3,
+            }}
+          />
+          <div className="flex-1 min-w-0">
+            <div
+              style={{
+                fontSize: 9.5,
+                letterSpacing: ".2em",
+                textTransform: "uppercase",
+                color: "#C8922E",
+                fontWeight: 700,
+              }}
+            >
+              Today&apos;s pick
+            </div>
+            <div
+              style={{
+                fontSize: 13.5,
+                fontWeight: 600,
+                letterSpacing: "-.01em",
+                color: "#1A1512",
+                marginTop: 3,
+              }}
+            >
+              Mamra Almonds
+            </div>
+            <div
+              style={{
+                fontSize: 11.5,
+                color: "#7C7268",
+                marginTop: 1,
+              }}
+            >
+              Kandahar &middot; Grade A
+            </div>
+          </div>
+        </div>
+
+        {/* Divider + price row */}
+        <div
+          style={{
+            borderTop: "1px solid #E7E1D7",
+            marginTop: 13,
+            paddingTop: 12,
+            display: "flex",
+            alignItems: "baseline",
+            justifyContent: "space-between",
+          }}
+        >
+          <div>
+            <span
+              style={{
+                fontSize: 17,
+                fontWeight: 700,
+                color: "#1A1512",
+              }}
+            >
+              PKR 4,250
+            </span>
+            <span
+              style={{
+                fontSize: 11.5,
+                color: "#7C7268",
+                marginLeft: 3,
+              }}
+            >
+              / 250g
+            </span>
+          </div>
+          <Link
+            href="/products"
+            style={{
+              fontSize: 11.5,
+              fontWeight: 600,
+              color: "#1A1512",
+              borderBottom: "1px solid #C8922E",
+              textDecoration: "none",
+              lineHeight: 1,
+              paddingBottom: 1,
+            }}
+          >
+            View
+          </Link>
+        </div>
+      </motion.div>
     </section>
   );
 }

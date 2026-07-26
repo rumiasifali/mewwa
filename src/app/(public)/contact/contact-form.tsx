@@ -1,91 +1,312 @@
 "use client";
 
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { MessageCircle, Send } from "lucide-react";
+import { Star } from "lucide-react";
 
-export function ContactForm({ whatsappLink }: { whatsappLink: string }) {
+type Tab = "message" | "review";
+
+export function ContactForm() {
+  const [activeTab, setActiveTab] = useState<Tab>("message");
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+
+  const tabStyle = (tab: Tab): React.CSSProperties => ({
+    padding: "14px 20px",
+    fontSize: 13.5,
+    fontWeight: activeTab === tab ? 600 : 500,
+    color: activeTab === tab ? "#1A1512" : "#7C7268",
+    background: "none",
+    border: "none",
+    borderBottom: activeTab === tab ? "2px solid #1A1512" : "2px solid transparent",
+    cursor: "pointer",
+    fontFamily: "inherit",
+  });
+
+  const inputStyle: React.CSSProperties = {
+    height: 44,
+    border: "1px solid #DCD3C5",
+    background: "#fff",
+    borderRadius: 2,
+    fontSize: 14,
+    padding: "0 14px",
+    width: "100%",
+    fontFamily: "inherit",
+    outline: "none",
+    boxSizing: "border-box",
+  };
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 13,
+    fontWeight: 600,
+    color: "#2A211A",
+    display: "block",
+    marginBottom: 6,
+  };
 
   if (submitted) {
     return (
-      <div className="rounded-2xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 p-8 text-center">
-        <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
-          <Send className="w-7 h-7 text-green-600" />
-        </div>
-        <h3 className="text-xl font-semibold">Message Sent!</h3>
-        <p className="mt-2 text-muted-foreground">
-          We&apos;ll get back to you within 24 hours. For faster response, reach
-          out on WhatsApp.
+      <div style={{ textAlign: "center", padding: "60px 0" }}>
+        <p style={{ fontSize: 18, fontWeight: 700, color: "#1A1512" }}>
+          {activeTab === "message" ? "Message sent!" : "Review submitted!"}
         </p>
-        <Button
-          asChild
-          className="mt-6 rounded-full bg-green-600 hover:bg-green-700"
+        <p style={{ fontSize: 14, color: "#7C7268", marginTop: 8 }}>
+          Thank you. We&apos;ll be in touch soon.
+        </p>
+        <button
+          onClick={() => setSubmitted(false)}
+          style={{
+            marginTop: 20,
+            height: 44,
+            padding: "0 24px",
+            background: "#1A1512",
+            color: "#fff",
+            fontSize: 14,
+            fontWeight: 600,
+            border: "none",
+            borderRadius: 2,
+            cursor: "pointer",
+            fontFamily: "inherit",
+          }}
         >
-          <a href={whatsappLink} target="_blank" rel="noopener noreferrer">
-            <MessageCircle className="w-4 h-4 mr-2" />
-            Chat on WhatsApp
-          </a>
-        </Button>
+          Send another
+        </button>
       </div>
     );
   }
 
   return (
-    <form
-      onSubmit={(e) => {
-        e.preventDefault();
-        setSubmitted(true);
-      }}
-      className="space-y-6"
-    >
-      <div className="grid sm:grid-cols-2 gap-6">
-        <div className="space-y-2">
-          <Label htmlFor="name">Name</Label>
-          <Input
-            id="name"
-            placeholder="Your name"
-            required
-            className="h-12 rounded-xl"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="email">Email</Label>
-          <Input
-            id="email"
-            type="email"
-            placeholder="you@example.com"
-            required
-            className="h-12 rounded-xl"
-          />
-        </div>
+    <div>
+      {/* Tabs */}
+      <div
+        style={{
+          display: "flex",
+          gap: 0,
+          borderBottom: "1px solid #E7E1D7",
+        }}
+      >
+        <button style={tabStyle("message")} onClick={() => setActiveTab("message")}>
+          Message
+        </button>
+        <button style={tabStyle("review")} onClick={() => setActiveTab("review")}>
+          Review
+        </button>
       </div>
-      <div className="space-y-2">
-        <Label htmlFor="subject">Subject</Label>
-        <Input
-          id="subject"
-          placeholder="What's this about?"
-          required
-          className="h-12 rounded-xl"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="message">Message</Label>
-        <Textarea
-          id="message"
-          placeholder="Tell us more..."
-          required
-          rows={6}
-          className="rounded-xl resize-none"
-        />
-      </div>
-      <Button type="submit" size="lg" className="rounded-full px-8 h-12">
-        <Send className="w-4 h-4 mr-2" />
-        Send Message
-      </Button>
-    </form>
+
+      {/* Message form */}
+      {activeTab === "message" && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSubmitted(true);
+          }}
+          style={{ marginTop: 28 }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div>
+              <label style={labelStyle} htmlFor="msg-name">
+                Name
+              </label>
+              <input
+                id="msg-name"
+                name="name"
+                required
+                placeholder="Your name"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle} htmlFor="msg-email">
+                Email
+              </label>
+              <input
+                id="msg-email"
+                name="email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle} htmlFor="msg-subject">
+              Subject
+            </label>
+            <input
+              id="msg-subject"
+              name="subject"
+              required
+              placeholder="What's this about?"
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle} htmlFor="msg-message">
+              Message
+            </label>
+            <textarea
+              id="msg-message"
+              name="message"
+              required
+              rows={6}
+              placeholder="Tell us more..."
+              style={{
+                ...inputStyle,
+                height: "auto",
+                padding: "12px 14px",
+                resize: "none",
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            style={{
+              marginTop: 24,
+              width: "100%",
+              height: 48,
+              background: "#1A1512",
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 600,
+              border: "none",
+              borderRadius: 2,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Send message
+          </button>
+        </form>
+      )}
+
+      {/* Review form */}
+      {activeTab === "review" && (
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            setSubmitted(true);
+          }}
+          style={{ marginTop: 28 }}
+        >
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+            <div>
+              <label style={labelStyle} htmlFor="rev-name">
+                Name
+              </label>
+              <input
+                id="rev-name"
+                name="name"
+                required
+                placeholder="Your name"
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={labelStyle} htmlFor="rev-email">
+                Email
+              </label>
+              <input
+                id="rev-email"
+                name="email"
+                type="email"
+                required
+                placeholder="you@example.com"
+                style={inputStyle}
+              />
+            </div>
+          </div>
+
+          {/* Star rating */}
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle}>Rating</label>
+            <div style={{ display: "flex", gap: 4 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  type="button"
+                  onClick={() => setRating(star)}
+                  onMouseEnter={() => setHoverRating(star)}
+                  onMouseLeave={() => setHoverRating(0)}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    lineHeight: 1,
+                  }}
+                  aria-label={`Rate ${star} star${star > 1 ? "s" : ""}`}
+                >
+                  <Star
+                    size={28}
+                    fill={
+                      star <= (hoverRating || rating) ? "#C8922E" : "none"
+                    }
+                    stroke={
+                      star <= (hoverRating || rating) ? "#C8922E" : "#DCD3C5"
+                    }
+                    strokeWidth={1.5}
+                  />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle} htmlFor="rev-subject">
+              Subject
+            </label>
+            <input
+              id="rev-subject"
+              name="subject"
+              required
+              placeholder="Review title"
+              style={inputStyle}
+            />
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <label style={labelStyle} htmlFor="rev-review">
+              Your review
+            </label>
+            <textarea
+              id="rev-review"
+              name="review"
+              required
+              rows={6}
+              placeholder="Share your experience..."
+              style={{
+                ...inputStyle,
+                height: "auto",
+                padding: "12px 14px",
+                resize: "none",
+              }}
+            />
+          </div>
+
+          <button
+            type="submit"
+            style={{
+              marginTop: 24,
+              width: "100%",
+              height: 48,
+              background: "#1A1512",
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 600,
+              border: "none",
+              borderRadius: 2,
+              cursor: "pointer",
+              fontFamily: "inherit",
+            }}
+          >
+            Submit review
+          </button>
+        </form>
+      )}
+    </div>
   );
 }

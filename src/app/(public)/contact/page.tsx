@@ -1,7 +1,6 @@
 import { getSettings } from "@/lib/data";
-import { AnimatedSection, slideInLeft, slideInRight } from "@/components/shared/motion";
-import { MessageCircle, Mail, Phone, MapPin } from "lucide-react";
 import { ContactForm } from "./contact-form";
+import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
 
 export const revalidate = 60;
 
@@ -9,126 +8,195 @@ export default async function ContactPage() {
   const settings = await getSettings();
 
   const rawNumber = settings?.whatsapp_number ?? "923001234567";
-  // Normalize to international format: strip +, spaces, dashes
-  // If starts with 0, replace with country code 92 (Pakistan)
   const whatsappNumber = rawNumber
     .replace(/[\s\-()]/g, "")
     .replace(/^\+/, "")
     .replace(/^0/, "92");
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hi, I'd like to know more about your products.")}`;
-  const phone = settings?.phone ?? "+92 300 1234567";
+  const phone = settings?.phone ?? "+92-300-1234567";
   const email = settings?.email ?? "hello@qaaq.pk";
-  const address = settings?.address ?? "Pakistan";
+  const address = settings?.address ?? "Gilgit-Baltistan, Pakistan";
 
   return (
-    <div className="pt-24 sm:pt-28 pb-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <AnimatedSection className="max-w-2xl mb-16">
-          <p className="text-sm font-medium text-primary uppercase tracking-wider">
-            Get in Touch
+    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "44px 28px 110px" }}>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: ".45fr .55fr",
+          gap: "1px",
+          background: "#E7E1D7",
+          borderRadius: 2,
+          overflow: "hidden",
+        }}
+      >
+        {/* ── Left dark panel ── */}
+        <div style={{ background: "#1A1512", padding: 52 }}>
+          <p
+            style={{
+              fontSize: 12,
+              fontWeight: 600,
+              textTransform: "uppercase",
+              letterSpacing: ".14em",
+              color: "#C8922E",
+              margin: 0,
+            }}
+          >
+            Get in touch
           </p>
-          <h1 className="mt-3 text-4xl sm:text-5xl font-bold tracking-tight">
-            Let&apos;s Talk
+
+          <h1
+            style={{
+              fontSize: "clamp(30px, 3vw, 44px)",
+              fontWeight: 800,
+              color: "#fff",
+              letterSpacing: "-.04em",
+              lineHeight: 1.1,
+              marginTop: 16,
+            }}
+          >
+            WhatsApp is fastest.
           </h1>
-          <p className="mt-4 text-lg text-muted-foreground">
-            Have a question, want to place a bulk order, or just want to say
-            hello? We&apos;d love to hear from you.
+
+          <p
+            style={{
+              fontSize: 15.5,
+              lineHeight: 1.7,
+              color: "rgba(255,255,255,.6)",
+              marginTop: 16,
+            }}
+          >
+            Drop us a message on WhatsApp for the quickest reply&mdash;we
+            typically respond within minutes during business hours.
           </p>
-        </AnimatedSection>
 
-        <div className="grid lg:grid-cols-5 gap-12 lg:gap-16">
-          {/* Contact Form */}
-          <AnimatedSection variants={slideInLeft} className="lg:col-span-3">
-            <ContactForm whatsappLink={whatsappLink} />
-          </AnimatedSection>
+          {/* WhatsApp CTA */}
+          <a
+            href={whatsappLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 8,
+              height: 52,
+              padding: "0 28px",
+              marginTop: 28,
+              background: "#1FA855",
+              color: "#fff",
+              fontSize: 14,
+              fontWeight: 600,
+              borderRadius: 2,
+              textDecoration: "none",
+              border: "none",
+              cursor: "pointer",
+            }}
+          >
+            <MessageCircle size={18} />
+            Chat on WhatsApp
+          </a>
 
-          {/* Contact Info */}
-          <AnimatedSection variants={slideInRight} className="lg:col-span-2">
-            <div className="space-y-6">
-              {/* WhatsApp Card */}
+          {/* Contact rows */}
+          <div
+            style={{
+              marginTop: 40,
+              borderTop: "1px solid rgba(255,255,255,.1)",
+            }}
+          >
+            {/* Email */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "18px 0",
+                borderBottom: "1px solid rgba(255,255,255,.1)",
+              }}
+            >
+              <Mail size={16} style={{ color: "rgba(255,255,255,.4)", flexShrink: 0 }} />
               <a
-                href={whatsappLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="group block p-6 rounded-2xl bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 hover:shadow-lg transition-all duration-300"
+                href={`mailto:${email}`}
+                style={{
+                  fontSize: 14,
+                  color: "rgba(255,255,255,.7)",
+                  textDecoration: "none",
+                }}
               >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-green-500 flex items-center justify-center shrink-0">
-                    <MessageCircle className="w-6 h-6 text-white" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground">
-                      WhatsApp — Fastest Response
-                    </h3>
-                    <p className="text-sm text-muted-foreground mt-0.5">
-                      Typically replies within minutes
-                    </p>
-                  </div>
-                </div>
+                {email}
               </a>
-
-              {/* Other contacts */}
-              <div className="p-6 rounded-2xl bg-card border border-border/50 space-y-6">
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Phone className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm">Phone</h3>
-                    <a
-                      href={`tel:${phone}`}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {phone}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <Mail className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm">Email</h3>
-                    <a
-                      href={`mailto:${email}`}
-                      className="text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {email}
-                    </a>
-                  </div>
-                </div>
-
-                <div className="flex items-start gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                    <MapPin className="w-5 h-5 text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-sm">Location</h3>
-                    <p className="text-muted-foreground">{address}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Hours */}
-              <div className="p-6 rounded-2xl bg-card border border-border/50">
-                <h3 className="font-semibold mb-3">Business Hours</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">
-                      Monday - Saturday
-                    </span>
-                    <span className="font-medium">9:00 AM - 9:00 PM</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Sunday</span>
-                    <span className="font-medium">11:00 AM - 6:00 PM</span>
-                  </div>
-                </div>
-              </div>
             </div>
-          </AnimatedSection>
+
+            {/* Phone */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "18px 0",
+                borderBottom: "1px solid rgba(255,255,255,.1)",
+              }}
+            >
+              <Phone size={16} style={{ color: "rgba(255,255,255,.4)", flexShrink: 0 }} />
+              <a
+                href={`tel:${phone}`}
+                style={{
+                  fontSize: 14,
+                  color: "rgba(255,255,255,.7)",
+                  textDecoration: "none",
+                }}
+              >
+                {phone}
+              </a>
+            </div>
+
+            {/* Location */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                padding: "18px 0",
+              }}
+            >
+              <MapPin size={16} style={{ color: "rgba(255,255,255,.4)", flexShrink: 0 }} />
+              <span style={{ fontSize: 14, color: "rgba(255,255,255,.7)" }}>
+                {address}
+              </span>
+            </div>
+          </div>
+
+          {/* Social links */}
+          <div style={{ display: "flex", gap: 20, marginTop: 32 }}>
+            <a
+              href="#"
+              style={{
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: ".1em",
+                color: "rgba(255,255,255,.5)",
+                textDecoration: "none",
+              }}
+            >
+              Instagram
+            </a>
+            <a
+              href="#"
+              style={{
+                fontSize: 12,
+                textTransform: "uppercase",
+                letterSpacing: ".1em",
+                color: "rgba(255,255,255,.5)",
+                textDecoration: "none",
+              }}
+            >
+              Facebook
+            </a>
+          </div>
+        </div>
+
+        {/* ── Right form panel ── */}
+        <div style={{ background: "#FBF9F5", padding: "52px 52px 52px 52px" }}>
+          <ContactForm />
         </div>
       </div>
     </div>

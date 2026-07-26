@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import { getProducts, getCategories } from "@/lib/data";
 import { ProductsGrid } from "@/components/products/products-grid";
 
@@ -9,5 +10,9 @@ export default async function ProductsPage() {
     getCategories(),
   ]);
 
-  return <ProductsGrid products={products} categories={categories} />;
+  return (
+    <Suspense>
+      <ProductsGrid products={products} categories={categories} />
+    </Suspense>
+  );
 }
