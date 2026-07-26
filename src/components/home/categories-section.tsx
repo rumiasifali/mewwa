@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { AnimatedSection, motion, staggerContainer, fadeUp } from "@/components/shared/motion";
 import { ArrowUpRight } from "lucide-react";
 import type { Category } from "@/types";
@@ -32,7 +33,7 @@ export function CategoriesSection({ categories }: { categories: Category[] }) {
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
           variants={staggerContainer}
-          className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6"
+          className="grid grid-cols-2 lg:grid-cols-4 gap-6"
         >
           {categories.map((cat, i) => (
             <motion.div key={cat.id} variants={fadeUp} custom={i}>
@@ -40,11 +41,22 @@ export function CategoriesSection({ categories }: { categories: Category[] }) {
                 href={`/products?category=${cat.slug}`}
                 className="group relative block aspect-[4/5] overflow-hidden rounded-2xl bg-gradient-to-br from-amber-100 to-stone-100 dark:from-amber-950/30 dark:to-stone-900"
               >
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <span className="text-8xl sm:text-9xl opacity-20 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6">
-                    {categoryEmojis[cat.slug] || "🥜"}
-                  </span>
-                </div>
+                {/* Background image if available */}
+                {cat.image_url ? (
+                  <Image
+                    src={cat.image_url}
+                    alt={cat.name}
+                    fill
+                    className="object-cover object-center transition-transform duration-700 group-hover:scale-105"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <span className="text-8xl sm:text-9xl opacity-20 transition-transform duration-700 group-hover:scale-110 group-hover:rotate-6">
+                      {categoryEmojis[cat.slug] || "🥜"}
+                    </span>
+                  </div>
+                )}
                 <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 <div className="absolute inset-0 p-5 sm:p-6 flex flex-col justify-end">
                   <h3 className="text-white font-semibold text-lg sm:text-xl">

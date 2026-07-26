@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { deleteImageFromUrl } from "@/lib/supabase/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -93,6 +94,11 @@ export default function AdminCategoriesPage() {
     setSaving(true);
     const data = { ...form, slug: form.slug || generateSlug(form.name) };
 
+    // If updating and image changed, delete old image
+    if (editing && editing.image_url !== form.image_url && editing.image_url) {
+      await deleteImageFromUrl(editing.image_url);
+    }
+
     if (editing) {
       await supabase.from("categories").update(data).eq("id", editing.id);
     } else {
@@ -106,6 +112,12 @@ export default function AdminCategoriesPage() {
 
   async function handleDelete() {
     if (!editing) return;
+
+    // Delete image if exists
+    if (editing.image_url) {
+      await deleteImageFromUrl(editing.image_url);
+    }
+
     await supabase.from("categories").delete().eq("id", editing.id);
     setDeleteDialogOpen(false);
     setEditing(null);

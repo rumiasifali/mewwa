@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import { ImagePlus, Loader2, X, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { deleteImageFromUrl } from "@/lib/supabase/storage";
 
 interface ImageUploadProps {
   value: string;
@@ -49,6 +50,11 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
       setUploading(true);
       setError("");
 
+      // Delete old image if replacing
+      if (value) {
+        await deleteImageFromUrl(value);
+      }
+
       // Convert unsupported formats
       let processedFile = file;
       try {
@@ -80,7 +86,7 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
       onChange(urlData.publicUrl);
       setUploading(false);
     },
-    [supabase, onChange]
+    [supabase, onChange, value]
   );
 
   // Drag and drop handlers
@@ -138,7 +144,10 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
           />
           <button
             type="button"
-            onClick={() => onChange("")}
+            onClick={async () => {
+              await deleteImageFromUrl(value);
+              onChange("");
+            }}
             className="absolute -top-2 -right-2 w-6 h-6 rounded-full bg-destructive text-white flex items-center justify-center shadow-md hover:bg-destructive/80"
           >
             <X className="w-3.5 h-3.5" />

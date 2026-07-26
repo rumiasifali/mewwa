@@ -41,22 +41,36 @@ export function Footer() {
             </ul>
           </div>
 
-          {/* Categories */}
+          {/* Support */}
           <div>
             <h3 className="text-sm font-semibold uppercase tracking-wider text-background/40 mb-4">
-              Categories
+              Support
             </h3>
             <ul className="space-y-3">
-              {["Nuts", "Dried Fruits", "Seeds", "Gift Boxes"].map((cat) => (
-                <li key={cat}>
-                  <Link
-                    href={`/products?category=${cat.toLowerCase().replace(" ", "-")}`}
-                    className="text-sm text-background/60 hover:text-background transition-colors"
-                  >
-                    {cat}
-                  </Link>
-                </li>
-              ))}
+              <li>
+                <Link
+                  href="/feedback"
+                  className="text-sm text-background/60 hover:text-background transition-colors"
+                >
+                  Leave Feedback
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/contact"
+                  className="text-sm text-background/60 hover:text-background transition-colors"
+                >
+                  Get Support
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/shipping"
+                  className="text-sm text-background/60 hover:text-background transition-colors"
+                >
+                  Shipping Info
+                </Link>
+              </li>
             </ul>
           </div>
 

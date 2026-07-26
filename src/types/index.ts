@@ -68,3 +68,16 @@ export interface SiteSettings {
     twitter?: string;
   };
 }
+
+export interface Testimonial {
+  id: string;
+  name: string;
+  email: string;
+  location: string;
+  rating: number;
+  content: string;
+  product_id: string | null;
+  status: "pending" | "approved" | "rejected";
+  created_at: string;
+  updated_at: string;
+}

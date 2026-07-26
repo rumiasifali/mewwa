@@ -149,3 +149,63 @@ function mapProduct(row: any): Product {
     updated_at: row.updated_at,
   };
 }
+
+// Testimonials
+export async function getApprovedTestimonials(limit = 100): Promise<import("@/types").Testimonial[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("testimonials")
+    .select("*")
+    .eq("status", "approved")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data;
+}
+
+export async function createTestimonial(testimonial: Omit<import("@/types").Testimonial, "id" | "created_at" | "updated_at" | "status">) {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("testimonials")
+    .insert({
+      ...testimonial,
+      status: "pending",
+    })
+    .select()
+    .single();
+
+  if (error || !data) return null;
+  return data;
+}
+
+export async function getAllTestimonials() {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("testimonials")
+    .select("*")
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+  return data;
+}
+
+export async function updateTestimonialStatus(id: string, status: "approved" | "rejected") {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("testimonials")
+    .update({ status })
+    .eq("id", id);
+
+  return !error;
+}
+
+export async function deleteTestimonial(id: string) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("testimonials")
+    .delete()
+    .eq("id", id);
+
+  return !error;
+}

@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useCallback, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { deleteImagesFromUrls } from "@/lib/supabase/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +18,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   Pencil,
@@ -52,6 +54,9 @@ interface Product {
     carbs: string;
     fiber: string;
   } | null;
+  storage_instructions?: string;
+  shelf_life?: string;
+  shipping_info?: string;
   tags: string[];
   is_featured: boolean;
   is_available: boolean;
@@ -75,6 +80,9 @@ const emptyProduct: Omit<Product, "id" | "categories"> = {
     carbs: "0g",
     fiber: "0g",
   },
+  storage_instructions: "",
+  shelf_life: "",
+  shipping_info: "",
   tags: [],
   is_featured: false,
   is_available: true,
@@ -130,6 +138,9 @@ export default function AdminProductsPage() {
       images: product.images || [],
       weights: product.weights || [],
       nutrition: product.nutrition || emptyProduct.nutrition,
+      storage_instructions: product.storage_instructions || "",
+      shelf_life: product.shelf_life || "",
+      shipping_info: product.shipping_info || "",
       tags: product.tags || [],
       is_featured: product.is_featured,
       is_available: product.is_available,
@@ -195,6 +206,23 @@ export default function AdminProductsPage() {
       slug: form.slug || generateSlug(form.name),
     };
 
+    // If updating and main image changed, delete old image
+    if (editingProduct && editingProduct.image_url !== form.image_url) {
+      if (editingProduct.image_url) {
+        await deleteImagesFromUrls([editingProduct.image_url]);
+      }
+    }
+
+    // Delete any gallery images that were removed
+    if (editingProduct && editingProduct.images?.length > 0) {
+      const removedImages = editingProduct.images.filter(
+        (img) => !form.images.includes(img)
+      );
+      if (removedImages.length > 0) {
+        await deleteImagesFromUrls(removedImages);
+      }
+    }
+
     if (editingProduct) {
       await supabase
         .from("products")
@@ -211,6 +239,18 @@ export default function AdminProductsPage() {
 
   async function handleDelete() {
     if (!editingProduct) return;
+
+    // Delete all images associated with this product
+    const imagesToDelete = [];
+    if (editingProduct.image_url) imagesToDelete.push(editingProduct.image_url);
+    if (editingProduct.images?.length > 0) {
+      imagesToDelete.push(...editingProduct.images);
+    }
+
+    if (imagesToDelete.length > 0) {
+      await deleteImagesFromUrls(imagesToDelete);
+    }
+
     await supabase.from("products").delete().eq("id", editingProduct.id);
     setDeleteDialogOpen(false);
     setEditingProduct(null);
@@ -574,6 +614,202 @@ export default function AdminProductsPage() {
                 <Label>Available</Label>
               </div>
             </div>
+
+            {/* Product Info Tabs */}
+            <Tabs defaultValue="nutrition" className="w-full">
+              <TabsList className="grid w-full grid-cols-3 rounded-xl bg-secondary h-11">
+                <TabsTrigger value="nutrition" className="rounded-lg">
+                  Nutrition
+                </TabsTrigger>
+                <TabsTrigger value="storage" className="rounded-lg">
+                  Storage
+                </TabsTrigger>
+                <TabsTrigger value="shipping" className="rounded-lg">
+                  Shipping
+                </TabsTrigger>
+              </TabsList>
+
+              {/* Nutrition Tab */}
+              <TabsContent value="nutrition" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Serving Size</Label>
+                  <Input
+                    value={form.nutrition?.serving_size || ""}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        nutrition: {
+                          serving_size: e.target.value,
+                          calories: f.nutrition?.calories || 0,
+                          protein: f.nutrition?.protein || "0g",
+                          fat: f.nutrition?.fat || "0g",
+                          carbs: f.nutrition?.carbs || "0g",
+                          fiber: f.nutrition?.fiber || "0g",
+                        },
+                      }))
+                    }
+                    placeholder="30g"
+                    className="rounded-lg"
+                  />
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Calories (kcal)</Label>
+                    <Input
+                      type="number"
+                      value={form.nutrition?.calories || 0}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          nutrition: {
+                            serving_size: f.nutrition?.serving_size || "30g",
+                            calories: parseInt(e.target.value) || 0,
+                            protein: f.nutrition?.protein || "0g",
+                            fat: f.nutrition?.fat || "0g",
+                            carbs: f.nutrition?.carbs || "0g",
+                            fiber: f.nutrition?.fiber || "0g",
+                          },
+                        }))
+                      }
+                      placeholder="0"
+                      className="rounded-lg"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Protein</Label>
+                    <Input
+                      value={form.nutrition?.protein || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          nutrition: {
+                            serving_size: f.nutrition?.serving_size || "30g",
+                            calories: f.nutrition?.calories || 0,
+                            protein: e.target.value,
+                            fat: f.nutrition?.fat || "0g",
+                            carbs: f.nutrition?.carbs || "0g",
+                            fiber: f.nutrition?.fiber || "0g",
+                          },
+                        }))
+                      }
+                      placeholder="0g"
+                      className="rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Fat</Label>
+                    <Input
+                      value={form.nutrition?.fat || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          nutrition: {
+                            serving_size: f.nutrition?.serving_size || "30g",
+                            calories: f.nutrition?.calories || 0,
+                            protein: f.nutrition?.protein || "0g",
+                            fat: e.target.value,
+                            carbs: f.nutrition?.carbs || "0g",
+                            fiber: f.nutrition?.fiber || "0g",
+                          },
+                        }))
+                      }
+                      placeholder="0g"
+                      className="rounded-lg"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Carbs</Label>
+                    <Input
+                      value={form.nutrition?.carbs || ""}
+                      onChange={(e) =>
+                        setForm((f) => ({
+                          ...f,
+                          nutrition: {
+                            serving_size: f.nutrition?.serving_size || "30g",
+                            calories: f.nutrition?.calories || 0,
+                            protein: f.nutrition?.protein || "0g",
+                            fat: f.nutrition?.fat || "0g",
+                            carbs: e.target.value,
+                            fiber: f.nutrition?.fiber || "0g",
+                          },
+                        }))
+                      }
+                      placeholder="0g"
+                      className="rounded-lg"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Fiber</Label>
+                  <Input
+                    value={form.nutrition?.fiber || ""}
+                    onChange={(e) =>
+                      setForm((f) => ({
+                        ...f,
+                        nutrition: {
+                          serving_size: f.nutrition?.serving_size || "30g",
+                          calories: f.nutrition?.calories || 0,
+                          protein: f.nutrition?.protein || "0g",
+                          fat: f.nutrition?.fat || "0g",
+                          carbs: f.nutrition?.carbs || "0g",
+                          fiber: e.target.value,
+                        },
+                      }))
+                    }
+                    placeholder="0g"
+                    className="rounded-lg"
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Storage Tab */}
+              <TabsContent value="storage" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Storage Instructions</Label>
+                  <Textarea
+                    value={form.storage_instructions || ""}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, storage_instructions: e.target.value }))
+                    }
+                    placeholder="Store in a cool, dry place away from moisture and sunlight..."
+                    rows={4}
+                    className="rounded-lg resize-none"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Shelf Life</Label>
+                  <Input
+                    value={form.shelf_life || ""}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, shelf_life: e.target.value }))
+                    }
+                    placeholder="12 months from packaging date"
+                    className="rounded-lg"
+                  />
+                </div>
+              </TabsContent>
+
+              {/* Shipping Tab */}
+              <TabsContent value="shipping" className="space-y-4 mt-4">
+                <div className="space-y-2">
+                  <Label>Shipping Info</Label>
+                  <Textarea
+                    value={form.shipping_info || ""}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, shipping_info: e.target.value }))
+                    }
+                    placeholder="Packed in food-grade packaging. Ships within 2 business days..."
+                    rows={4}
+                    className="rounded-lg resize-none"
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
 
             {/* Submit */}
             <div className="flex justify-end gap-3 pt-4 border-t">

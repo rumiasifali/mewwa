@@ -2,29 +2,14 @@
 
 import { AnimatedSection, motion, staggerContainer, fadeUp } from "@/components/shared/motion";
 import { Star } from "lucide-react";
+import Link from "next/link";
+import type { Testimonial } from "@/types";
 
-const testimonials = [
-  {
-    name: "Sarah K.",
-    location: "Islamabad",
-    text: "The Mamra almonds are genuinely the best I've had in Pakistan. You can taste the difference — crunchy, oily, and fresh. Will order again.",
-    rating: 5,
-  },
-  {
-    name: "Ahmed R.",
-    location: "Dubai, UAE",
-    text: "Finally found someone who ships quality Pakistani dry fruits internationally. The Hunza apricots reminded me of home. Packaging was excellent too.",
-    rating: 5,
-  },
-  {
-    name: "Fatima N.",
-    location: "Lahore",
-    text: "Ordered the gift box for Eid and it was beautiful. Premium quality, great presentation. My family loved it. Already planning a repeat order.",
-    rating: 5,
-  },
-];
+export function Testimonials({ testimonials }: { testimonials: Testimonial[] }) {
+  if (testimonials.length === 0) {
+    return null;
+  }
 
-export function Testimonials() {
   return (
     <section className="py-24 sm:py-32 bg-secondary/30">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -44,9 +29,9 @@ export function Testimonials() {
           variants={staggerContainer}
           className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8"
         >
-          {testimonials.map((t, i) => (
+          {testimonials.slice(0, 3).map((t, i) => (
             <motion.div
-              key={t.name}
+              key={t.id}
               variants={fadeUp}
               custom={i}
               className="p-6 sm:p-8 rounded-2xl bg-card border border-border/50"
@@ -63,7 +48,7 @@ export function Testimonials() {
 
               {/* Quote */}
               <p className="mt-4 text-foreground leading-relaxed">
-                &ldquo;{t.text}&rdquo;
+                &ldquo;{t.content}&rdquo;
               </p>
 
               {/* Author */}
@@ -81,6 +66,17 @@ export function Testimonials() {
             </motion.div>
           ))}
         </motion.div>
+
+        {/* CTA to leave feedback */}
+        <div className="text-center mt-12">
+          <p className="text-muted-foreground mb-4">Have you tried QAAQ? We'd love to hear your feedback!</p>
+          <Link
+            href="/feedback"
+            className="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors"
+          >
+            Leave Your Review
+          </Link>
+        </div>
       </div>
     </section>
   );

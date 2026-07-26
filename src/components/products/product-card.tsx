@@ -26,11 +26,16 @@ export function ProductCard({
       viewport={{ once: true, margin: "-40px" }}
       transition={{ delay: index * 0.06, duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
     >
-      <Link
-        href={`/products/${product.slug}`}
-        className="group block relative aspect-[3/4] rounded-2xl overflow-hidden bg-card shadow-sm"
+      <div
+        className="group block relative aspect-[3/4] rounded-2xl overflow-hidden bg-card shadow-sm cursor-pointer"
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        onClick={() => window.location.href = `/products/${product.slug}`}
+        role="link"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') window.location.href = `/products/${product.slug}`;
+        }}
       >
         {/* Image */}
         <div className="absolute inset-0 bg-stone-100 dark:bg-stone-900">
@@ -153,7 +158,7 @@ export function ProductCard({
             </motion.div>
           )}
         </AnimatePresence>
-      </Link>
+      </div>
     </motion.div>
   );
 }

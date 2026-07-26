@@ -4,6 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { deleteImageFromUrl } from "@/lib/supabase/storage";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -105,6 +106,11 @@ export default function AdminPostsPage() {
       published_at: form.published ? new Date().toISOString() : null,
     };
 
+    // If updating and cover image changed, delete old image
+    if (editing && editing.cover_image !== form.cover_image && editing.cover_image) {
+      await deleteImageFromUrl(editing.cover_image);
+    }
+
     if (editing) {
       await supabase.from("posts").update(data).eq("id", editing.id);
     } else {
@@ -118,6 +124,12 @@ export default function AdminPostsPage() {
 
   async function handleDelete() {
     if (!editing) return;
+
+    // Delete cover image if exists
+    if (editing.cover_image) {
+      await deleteImageFromUrl(editing.cover_image);
+    }
+
     await supabase.from("posts").delete().eq("id", editing.id);
     setDeleteDialogOpen(false);
     setEditing(null);

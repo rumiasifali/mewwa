@@ -4,14 +4,15 @@ import { CategoriesSection } from "@/components/home/categories-section";
 import { StorySection } from "@/components/home/story-section";
 import { Testimonials } from "@/components/home/testimonials";
 import { CTASection } from "@/components/home/cta-section";
-import { getFeaturedProducts, getCategories } from "@/lib/data";
+import { getFeaturedProducts, getCategories, getApprovedTestimonials } from "@/lib/data";
 
 export const revalidate = 60; // revalidate every 60 seconds
 
 export default async function Home() {
-  const [products, categories] = await Promise.all([
+  const [products, categories, testimonials] = await Promise.all([
     getFeaturedProducts(),
     getCategories(),
+    getApprovedTestimonials(6),
   ]);
 
   return (
@@ -20,7 +21,7 @@ export default async function Home() {
       <FeaturedProducts products={products} />
       <CategoriesSection categories={categories} />
       <StorySection />
-      <Testimonials />
+      <Testimonials testimonials={testimonials} />
       <CTASection />
     </>
   );

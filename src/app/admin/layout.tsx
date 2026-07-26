@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   LogOut,
   ChevronLeft,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ const sidebarLinks = [
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: FolderOpen },
   { href: "/admin/posts", label: "Posts", icon: FileText },
+  { href: "/admin/testimonials", label: "Testimonials", icon: MessageSquare },
   { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
