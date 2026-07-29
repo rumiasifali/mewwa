@@ -299,12 +299,11 @@ export function ProductDetail({
                       fontSize: 13,
                       fontWeight: isActive ? 600 : 500,
                       color: isActive ? "#1A1512" : "#7C7268",
-                      borderBottom: isActive
-                        ? "2px solid #1A1512"
-                        : "2px solid transparent",
                       marginBottom: -1,
                       background: "none",
-                      border: "none",
+                      borderTop: "none",
+                      borderLeft: "none",
+                      borderRight: "none",
                       borderBottomWidth: 2,
                       borderBottomStyle: "solid",
                       borderBottomColor: isActive ? "#1A1512" : "transparent",

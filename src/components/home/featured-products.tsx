@@ -109,15 +109,16 @@ export function FeaturedProducts({ products }: { products: Product[] }) {
               duration: 0.7,
               ease: [0.22, 1, 0.36, 1],
             }}
+            style={{ flex: "0 0 296px" }}
           >
             <Link
               href={`/products/${p.slug}`}
               className="block qaaq-hover-lift"
               style={{
-                flex: "0 0 296px",
                 background: "#FBF9F5",
                 padding: "18px 18px 20px",
                 position: "relative",
+                height: "100%",
               }}
             >
               {/* Image */}
