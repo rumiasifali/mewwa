@@ -124,7 +124,7 @@ export function PackedToOrder() {
                 </p>
                 <div
                   className="qaaq-eyebrow"
-                  style={{ marginTop: "18px" }}
+                  style={{ marginTop: "18px", letterSpacing: ".16em" }}
                 >
                   {st.when}
                 </div>

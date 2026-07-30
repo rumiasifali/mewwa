@@ -31,7 +31,7 @@ export default async function BlogPage() {
   const gridPosts = posts.slice(1);
 
   return (
-    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "44px 28px 110px" }}>
+    <div style={{ maxWidth: 1400, margin: "0 auto", padding: "44px 28px 0" }}>
       {/* ── Header ── */}
       <p className="qaaq-eyebrow">The journal</p>
 
@@ -67,10 +67,11 @@ export default async function BlogPage() {
             color: "#4A4139",
             maxWidth: 330,
             margin: 0,
+            paddingBottom: 6,
           }}
         >
-          Origin stories, recipes, and the honest details behind what goes into
-          every QAAQ pack&mdash;from orchard to shelf.
+          Harvest notes, sourcing economics, and the unglamorous parts of
+          keeping dry fruit fresh.
         </p>
       </div>
 
@@ -78,14 +79,14 @@ export default async function BlogPage() {
       {featured && (
         <Link
           href={`/blog/${featured.slug}`}
-          style={{ display: "block", marginTop: 40, textDecoration: "none" }}
+          className="qaaq-zoom"
+          style={{ display: "block", marginTop: 0, textDecoration: "none", cursor: "pointer" }}
         >
           <div
             style={{
               display: "grid",
               gridTemplateColumns: "1.1fr .9fr",
               background: "#1A1512",
-              borderRadius: 2,
               overflow: "hidden",
             }}
           >
@@ -95,7 +96,6 @@ export default async function BlogPage() {
                 position: "relative",
                 minHeight: 430,
                 overflow: "hidden",
-                background: "#F0EBE3",
               }}
             >
               {featured.cover_image && (
@@ -119,39 +119,40 @@ export default async function BlogPage() {
                 justifyContent: "center",
               }}
             >
-              {/* Featured badge */}
-              <span
+              {/* Featured badge + meta row */}
+              <div
                 style={{
-                  display: "inline-block",
-                  alignSelf: "flex-start",
-                  background: "#C8922E",
-                  color: "#1A1512",
-                  fontSize: 9.5,
-                  letterSpacing: ".16em",
-                  textTransform: "uppercase",
-                  fontWeight: 700,
-                  padding: "4px 8px",
-                  borderRadius: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
                 }}
               >
-                Featured
-              </span>
-
-              {/* Category + read time */}
-              <p
-                style={{
-                  fontSize: 11.5,
-                  letterSpacing: ".14em",
-                  textTransform: "uppercase",
-                  color: "rgba(255,255,255,.5)",
-                  fontWeight: 600,
-                  marginTop: 16,
-                  marginBottom: 0,
-                }}
-              >
-                {featured.category ? `${featured.category} · ` : ""}
-                {estimateReadTime(featured.content)} min read
-              </p>
+                <span
+                  style={{
+                    background: "#C8922E",
+                    color: "#1A1512",
+                    fontSize: 9.5,
+                    letterSpacing: ".16em",
+                    textTransform: "uppercase",
+                    fontWeight: 700,
+                    padding: "4px 8px",
+                  }}
+                >
+                  Featured
+                </span>
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    letterSpacing: ".14em",
+                    textTransform: "uppercase",
+                    color: "rgba(255,255,255,.5)",
+                    fontWeight: 600,
+                  }}
+                >
+                  {featured.category ? `${featured.category} · ` : ""}
+                  {estimateReadTime(featured.content)} min
+                </span>
+              </div>
 
               {/* Title */}
               <h2
@@ -188,7 +189,7 @@ export default async function BlogPage() {
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
-                  gap: 6,
+                  gap: 10,
                   fontSize: 13.5,
                   fontWeight: 600,
                   color: "#E7C079",
@@ -197,17 +198,14 @@ export default async function BlogPage() {
               >
                 Read the story
                 <svg
-                  width="14"
-                  height="14"
+                  width="16"
+                  height="16"
                   viewBox="0 0 24 24"
                   fill="none"
-                  stroke="currentColor"
+                  stroke="#E7C079"
                   strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
                 >
-                  <path d="M5 12h14" />
-                  <path d="m12 5 7 7-7 7" />
+                  <path d="M4 12h15M13 6l6 6-6 6" />
                 </svg>
               </span>
             </div>
@@ -224,6 +222,7 @@ export default async function BlogPage() {
             gap: 1,
             background: "#E7E1D7",
             borderTop: "1px solid #E7E1D7",
+            borderBottom: "1px solid #E7E1D7",
             marginTop: 56,
           }}
         >
@@ -235,9 +234,10 @@ export default async function BlogPage() {
               style={{
                 display: "block",
                 background: "#FBF9F5",
-                padding: 20,
+                padding: "20px 20px 26px",
                 textDecoration: "none",
                 color: "inherit",
+                cursor: "pointer",
               }}
             >
               {/* Thumbnail */}
@@ -246,7 +246,6 @@ export default async function BlogPage() {
                   aspectRatio: "16 / 10",
                   overflow: "hidden",
                   background: "#F0EBE3",
-                  borderRadius: 2,
                   position: "relative",
                 }}
               >
@@ -284,7 +283,8 @@ export default async function BlogPage() {
                   </span>
                 )}
                 <span style={{ fontSize: 11.5, color: "#B0A69A" }}>
-                  {formatDate(post.published_at || post.created_at)}
+                  {formatDate(post.published_at || post.created_at)} ·{" "}
+                  {estimateReadTime(post.content)} min
                 </span>
               </div>
 
@@ -321,6 +321,79 @@ export default async function BlogPage() {
           ))}
         </div>
       )}
+
+      {/* ── Newsletter CTA ── */}
+      <div
+        style={{
+          margin: "64px 0 110px",
+          background: "#F5F1EA",
+          border: "1px solid #E7E1D7",
+          padding: "44px 44px 46px",
+          display: "grid",
+          gridTemplateColumns: "1fr 380px",
+          gap: 48,
+          alignItems: "center",
+        }}
+      >
+        <div>
+          <h3
+            style={{
+              margin: 0,
+              fontSize: 28,
+              fontWeight: 750,
+              letterSpacing: "-.035em",
+              lineHeight: 1.1,
+            }}
+          >
+            One note per harvest. Nothing else.
+          </h3>
+          <p
+            style={{
+              margin: "12px 0 0",
+              fontSize: 14.5,
+              lineHeight: 1.65,
+              color: "#4A4139",
+              maxWidth: 440,
+            }}
+          >
+            We write when a lot lands — what valley, what it tastes like, what
+            it costs and why. Roughly six emails a year.
+          </p>
+        </div>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            type="email"
+            placeholder="you@email.com"
+            style={{
+              flex: 1,
+              height: 50,
+              padding: "0 14px",
+              border: "1px solid #DCD3C5",
+              background: "#fff",
+              borderRadius: 2,
+              fontSize: 14,
+              fontFamily: "Geist, sans-serif",
+              outline: "none",
+            }}
+          />
+          <span
+            style={{
+              cursor: "pointer",
+              display: "inline-flex",
+              alignItems: "center",
+              height: 50,
+              padding: "0 22px",
+              background: "#1A1512",
+              color: "#fff",
+              fontSize: 13.5,
+              fontWeight: 600,
+              borderRadius: 2,
+            }}
+          >
+            Subscribe
+          </span>
+        </div>
+      </div>
 
       {/* Empty state */}
       {posts.length === 0 && (

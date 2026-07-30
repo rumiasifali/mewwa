@@ -3,7 +3,7 @@
 export function AnnouncementBar() {
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[60] hidden sm:flex items-center justify-center"
+      className="fixed top-0 left-0 right-0 z-[80] hidden sm:flex items-center justify-center"
       style={{
         height: 34,
         background: "#1A1512",

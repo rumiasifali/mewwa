@@ -3,7 +3,7 @@
 import { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Search, X, ChevronDown, Grid3x3, Grid2x2, Star, Check, Package, MessageCircle } from "lucide-react";
+import { Search, X, ChevronDown, Star, Check, Package, MessageCircle } from "lucide-react";
 import { CatalogCard } from "@/components/products/catalog-card";
 import { getWhatsAppLink } from "@/lib/constants";
 import type { Product, Category } from "@/types";
@@ -144,10 +144,16 @@ export function ProductsGrid({
       result = result.filter((p) => activeCategories.includes(p.category));
     }
 
-    // search filter
+    // search filter (searches name, description, origin, tags)
     if (search.trim()) {
       const q = search.toLowerCase().trim();
-      result = result.filter((p) => p.name.toLowerCase().includes(q));
+      result = result.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.description.toLowerCase().includes(q) ||
+          p.origin.toLowerCase().includes(q) ||
+          p.tags.some((t) => t.toLowerCase().includes(q))
+      );
     }
 
     // toggle filters
@@ -227,8 +233,8 @@ export function ProductsGrid({
             >
               Home
             </Link>
-            <span style={{ margin: "0 6px" }}>/</span>
-            <span style={{ color: C.body }}>
+            <span style={{ margin: "0 8px" }}>/</span>
+            <span style={{ color: C.body, fontWeight: 500 }}>
               {activeCategoryName === "All Products"
                 ? "All Products"
                 : activeCategoryName}
@@ -242,7 +248,7 @@ export function ProductsGrid({
               alignItems: "flex-end",
               justifyContent: "space-between",
               flexWrap: "wrap",
-              gap: 20,
+              gap: 32,
             }}
           >
             {/* Left: title + subtitle */}
@@ -252,7 +258,7 @@ export function ProductsGrid({
                   fontSize: "clamp(34px, 4.2vw, 52px)",
                   fontWeight: 800,
                   letterSpacing: "-.045em",
-                  lineHeight: 1.05,
+                  lineHeight: 1,
                   color: C.ink,
                   margin: 0,
                 }}
@@ -261,11 +267,11 @@ export function ProductsGrid({
               </h1>
               <p
                 style={{
-                  fontSize: 14.5,
-                  color: C.muted,
-                  marginTop: 8,
-                  lineHeight: 1.5,
-                  maxWidth: 420,
+                  fontSize: 15,
+                  color: C.body,
+                  marginTop: 12,
+                  lineHeight: 1.6,
+                  maxWidth: 520,
                 }}
               >
                 Premium dry fruits and nuts, handpicked from the finest origins.
@@ -278,6 +284,7 @@ export function ProductsGrid({
                 display: "flex",
                 gap: 1,
                 background: C.line,
+                flexShrink: 0,
               }}
             >
               {/* In stock stat */}
@@ -285,7 +292,7 @@ export function ProductsGrid({
                 style={{
                   background: C.paper,
                   padding: "12px 20px",
-                  textAlign: "center",
+                  textAlign: "right",
                 }}
               >
                 <div
@@ -306,7 +313,7 @@ export function ProductsGrid({
                     textTransform: "uppercase" as const,
                     color: C.muted,
                     fontWeight: 600,
-                    marginTop: 2,
+                    marginTop: 3,
                   }}
                 >
                   In stock
@@ -318,7 +325,7 @@ export function ProductsGrid({
                 style={{
                   background: C.paper,
                   padding: "12px 20px",
-                  textAlign: "center",
+                  textAlign: "right",
                 }}
               >
                 <div
@@ -339,7 +346,7 @@ export function ProductsGrid({
                     textTransform: "uppercase" as const,
                     color: C.muted,
                     fontWeight: 600,
-                    marginTop: 2,
+                    marginTop: 3,
                   }}
                 >
                   Origins
@@ -357,7 +364,7 @@ export function ProductsGrid({
         style={{
           maxWidth: 1400,
           margin: "0 auto",
-          padding: "28px 28px 60px",
+          padding: "0 28px",
         }}
       >
         {/* Mobile filter pills (visible on small screens only) */}
@@ -403,6 +410,7 @@ export function ProductsGrid({
               position: "sticky",
               top: 112,
               alignSelf: "start",
+              padding: "28px 0 60px",
             }}
           >
             {/* Search input */}
@@ -410,9 +418,8 @@ export function ProductsGrid({
               <Search
                 style={{
                   position: "absolute",
-                  left: 10,
-                  top: "50%",
-                  transform: "translateY(-50%)",
+                  left: 11,
+                  top: 13,
                   width: 14,
                   height: 14,
                   color: C.muted2,
@@ -421,14 +428,14 @@ export function ProductsGrid({
               />
               <input
                 type="text"
-                placeholder="Search products..."
+                placeholder="Search products, origins..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{
                   width: "100%",
                   height: 40,
                   paddingLeft: 34,
-                  paddingRight: search ? 32 : 10,
+                  paddingRight: search ? 32 : 12,
                   border: `1px solid ${C.line3}`,
                   background: "#fff",
                   borderRadius: 2,
@@ -488,11 +495,11 @@ export function ProductsGrid({
                   Category
                 </span>
                 <ChevronDown
-                  style={{ width: 13, height: 13, color: C.muted }}
+                  style={{ width: 12, height: 12, color: C.muted2 }}
                 />
               </div>
 
-              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 11 }}>
                 {categories.map((cat) => {
                   const isChecked = activeCategories.includes(cat.slug);
                   return (
@@ -574,13 +581,13 @@ export function ProductsGrid({
                 borderTop: `1px solid ${C.line}`,
               }}
             >
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {/* In stock only */}
               <div
                 style={{
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
-                  marginBottom: 14,
                 }}
               >
                 <span style={{ fontSize: 13, color: C.body }}>
@@ -652,13 +659,14 @@ export function ProductsGrid({
                   />
                 </button>
               </div>
+              </div>
             </div>
           </aside>
 
           {/* ═══════════════════════════════════
               RESULTS COLUMN
               ═══════════════════════════════════ */}
-          <div>
+          <div style={{ padding: "28px 0 90px" }}>
             {/* ═══════════════════════════════
                 4. RESULTS TOOLBAR
                 ═══════════════════════════════ */}
@@ -679,7 +687,7 @@ export function ProductsGrid({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 10,
+                  gap: 8,
                   flexWrap: "wrap",
                 }}
               >
@@ -701,7 +709,7 @@ export function ProductsGrid({
                       style={{
                         display: "inline-flex",
                         alignItems: "center",
-                        gap: 5,
+                        gap: 7,
                         background: C.ink,
                         color: "#fff",
                         fontSize: 11.5,
@@ -713,7 +721,7 @@ export function ProductsGrid({
                       }}
                     >
                       {cat.name}
-                      <X style={{ width: 11, height: 11 }} />
+                      <X style={{ width: 10, height: 10 }} />
                     </button>
                   );
                 })}
@@ -724,7 +732,7 @@ export function ProductsGrid({
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  gap: 8,
+                  gap: 14,
                 }}
               >
                 {/* Density toggle */}
@@ -741,47 +749,46 @@ export function ProductsGrid({
                     onClick={() => setDensity("dense")}
                     title="4-column grid"
                     style={{
-                      width: 32,
-                      height: 32,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       background: density === "dense" ? C.paper : "#fff",
                       border: "none",
                       cursor: "pointer",
-                      padding: 0,
+                      padding: "6px 9px",
                     }}
                   >
-                    <Grid3x3
-                      style={{
-                        width: 15,
-                        height: 15,
-                        color: density === "dense" ? C.ink : C.muted,
-                      }}
-                    />
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill={density === "dense" ? C.ink : C.muted}>
+                      <rect x="0" y="0" width="4" height="4" />
+                      <rect x="5" y="0" width="4" height="4" />
+                      <rect x="10" y="0" width="4" height="4" />
+                      <rect x="0" y="5" width="4" height="4" />
+                      <rect x="5" y="5" width="4" height="4" />
+                      <rect x="10" y="5" width="4" height="4" />
+                      <rect x="0" y="10" width="4" height="4" />
+                      <rect x="5" y="10" width="4" height="4" />
+                      <rect x="10" y="10" width="4" height="4" />
+                    </svg>
                   </button>
                   <button
                     onClick={() => setDensity("roomy")}
                     title="3-column grid"
                     style={{
-                      width: 32,
-                      height: 32,
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                       background: density === "roomy" ? C.paper : "#fff",
                       border: "none",
                       cursor: "pointer",
-                      padding: 0,
+                      padding: "6px 9px",
                     }}
                   >
-                    <Grid2x2
-                      style={{
-                        width: 15,
-                        height: 15,
-                        color: density === "roomy" ? C.ink : C.muted,
-                      }}
-                    />
+                    <svg width="14" height="14" viewBox="0 0 14 14" fill={density === "roomy" ? C.ink : C.muted}>
+                      <rect x="0" y="0" width="6" height="6" />
+                      <rect x="8" y="0" width="6" height="6" />
+                      <rect x="0" y="8" width="6" height="6" />
+                      <rect x="8" y="8" width="6" height="6" />
+                    </svg>
                   </button>
                 </div>
 
@@ -792,24 +799,26 @@ export function ProductsGrid({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 6,
+                      gap: 7,
                       height: 32,
                       padding: "0 11px",
                       border: `1px solid ${C.line3}`,
                       background: "#fff",
                       borderRadius: 2,
                       fontSize: 12.5,
+                      fontWeight: 500,
                       color: C.body,
                       cursor: "pointer",
                       whiteSpace: "nowrap" as const,
                     }}
                   >
-                    Sort: {SORT_LABELS[sort]}
+                    <span style={{ color: "#7C7268" }}>Sort</span>{" "}
+                    <span style={{ color: "#1A1512" }}>{SORT_LABELS[sort]}</span>
                     <ChevronDown
                       style={{
                         width: 12,
                         height: 12,
-                        color: C.muted,
+                        color: C.ink,
                         transform: sortOpen ? "rotate(180deg)" : "none",
                         transition: "transform .15s",
                       }}
@@ -910,7 +919,7 @@ export function ProductsGrid({
                     <div
                       style={{
                         aspectRatio: "1",
-                        background: C.paper2,
+                        background: "#EFEAE2",
                         borderRadius: 0,
                       }}
                       className="animate-pulse"
@@ -1105,16 +1114,14 @@ export function ProductsGrid({
                 {/* ═══════════════════════════════
                     6. END STATE
                     ═══════════════════════════════ */}
-                <div style={{ marginTop: 36, textAlign: "center" }}>
+                <div style={{ marginTop: 40, display: "flex", flexDirection: "column", alignItems: "center", gap: 16 }}>
                   {/* Progress bar */}
                   <div
                     style={{
-                      width: "100%",
+                      width: 180,
                       height: 2,
                       background: C.line,
-                      borderRadius: 1,
                       overflow: "hidden",
-                      marginBottom: 16,
                     }}
                   >
                     <div
@@ -1127,16 +1134,16 @@ export function ProductsGrid({
                   </div>
                   <p
                     style={{
-                      fontSize: 13,
+                      fontSize: 12,
                       color: C.muted,
-                      marginBottom: 12,
+                      margin: 0,
                     }}
                   >
                     You&apos;ve seen all{" "}
                     <strong style={{ color: C.body, fontWeight: 600 }}>
                       {filtered.length}
                     </strong>{" "}
-                    products
+                    products in this aisle
                   </p>
                   <button
                     onClick={() => {
@@ -1148,12 +1155,13 @@ export function ProductsGrid({
                       window.scrollTo({ top: 0, behavior: "smooth" });
                     }}
                     style={{
-                      padding: "10px 22px",
-                      fontSize: 13,
+                      height: 44,
+                      padding: "0 24px",
+                      fontSize: 13.5,
                       fontWeight: 600,
                       color: C.ink,
                       background: "transparent",
-                      border: `1px solid ${C.line3}`,
+                      border: `1px solid ${C.ink}`,
                       borderRadius: 2,
                       cursor: "pointer",
                     }}

@@ -39,6 +39,9 @@ yarn-error.log*
 # supabase
 supabase/.temp/
 
+# design handoff files
+designs/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

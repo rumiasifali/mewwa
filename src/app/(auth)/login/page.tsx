@@ -42,7 +42,7 @@ function LoginForm() {
         className="hidden lg:flex flex-1 flex-col justify-center"
         style={{
           backgroundColor: "#1A1512",
-          padding: 64,
+          padding: "72px 64px",
           minHeight: "100vh",
         }}
       >
@@ -50,7 +50,7 @@ function LoginForm() {
         <div>
           <div
             style={{
-              fontSize: 32,
+              fontSize: 26,
               fontWeight: 800,
               letterSpacing: "-.05em",
               color: "#fff",
@@ -96,13 +96,13 @@ function LoginForm() {
           </p>
         </div>
 
-        {/* Decorative dot */}
+        {/* Decorative radial gradient */}
         <div
           style={{
-            width: 4,
-            height: 4,
+            width: 120,
+            height: 120,
             borderRadius: "50%",
-            backgroundColor: "#C8922E",
+            background: "radial-gradient(circle, rgba(200,146,46,.25) 0%, transparent 70%)",
             marginTop: 32,
           }}
         />
@@ -113,7 +113,7 @@ function LoginForm() {
         className="flex-1 flex flex-col justify-center items-center px-6"
         style={{ backgroundColor: "#FBF9F5", minHeight: "100vh" }}
       >
-        <div style={{ width: "100%", maxWidth: 480 }}>
+        <div style={{ width: "100%", maxWidth: 380 }}>
           {/* Mobile logo */}
           <div className="lg:hidden" style={{ marginBottom: 40 }}>
             <div
@@ -149,10 +149,10 @@ function LoginForm() {
               lineHeight: 1,
             }}
           >
-            Sign in
+            Admin login
           </h1>
           <p style={{ fontSize: 14, color: "#7C7268", marginTop: 8 }}>
-            Admin access only
+            Sign in to the QAAQ dashboard
           </p>
 
           <form onSubmit={handleLogin} style={{ marginTop: 32 }}>
@@ -185,7 +185,7 @@ function LoginForm() {
                   border: "1px solid #DCD3C5",
                   backgroundColor: "#fff",
                   borderRadius: 2,
-                  fontSize: 15,
+                  fontSize: 14.5,
                   padding: "0 16px",
                   marginTop: 8,
                   outline: "none",
@@ -223,7 +223,7 @@ function LoginForm() {
                   border: "1px solid #DCD3C5",
                   backgroundColor: "#fff",
                   borderRadius: 2,
-                  fontSize: 15,
+                  fontSize: 14.5,
                   padding: "0 16px",
                   marginTop: 8,
                   outline: "none",
@@ -257,10 +257,10 @@ function LoginForm() {
                 alignItems: "center",
                 justifyContent: "center",
                 width: "100%",
-                height: 52,
+                height: 50,
                 backgroundColor: "#1A1512",
                 color: "#fff",
-                fontSize: 15,
+                fontSize: 14.5,
                 fontWeight: 600,
                 borderRadius: 2,
                 border: "none",

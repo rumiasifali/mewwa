@@ -3,27 +3,51 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useCallback } from "react";
-import { getTestimonials, updateTestimonialStatusAction, deleteTestimonialAction } from "./actions";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Check, X, Trash2, Star } from "lucide-react";
-import type { Testimonial } from "@/types";
+  getTestimonials,
+  updateTestimonialStatusAction,
+  deleteTestimonialAction,
+} from "./actions";
+import type { TestimonialWithOrder } from "./actions";
+import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
+
+/* ── design tokens ── */
+const ink = "#1A1512";
+const gold = "#C8922E";
+const line = "#E7E1D7";
+const muted = "#7C7268";
+const muted2 = "#9A9086";
+const body = "#4A4139";
+const faint = "#B0A69A";
+const warn = "#B4551F";
+const warnBg = "#F7EBDA";
+const bodyDark = "#2E2721";
+
+type TabKey = "pending" | "approved" | "rejected";
+
+/* ── helpers ── */
+function daysAgo(dateStr: string): string {
+  const now = new Date();
+  const then = new Date(dateStr);
+  const diff = Math.floor(
+    (now.getTime() - then.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  if (diff === 0) return "today";
+  if (diff === 1) return "1 day ago";
+  return `${diff} days ago`;
+}
+
+function formatDeliveryDate(dateStr: string): string {
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+}
 
 export default function AdminTestimonialsPage() {
-  const [testimonials, setTestimonials] = useState<Testimonial[]>([]);
+  const [testimonials, setTestimonials] = useState<TestimonialWithOrder[]>([]);
   const [loading, setLoading] = useState(true);
-  const [deleting, setDeleting] = useState<string | null>(null);
-  const [approving, setApproving] = useState<string | null>(null);
-  const [selectedTab, setSelectedTab] = useState("pending");
-  const [viewingTestimonial, setViewingTestimonial] = useState<Testimonial | null>(null);
+  const [processingId, setProcessingId] = useState<string | null>(null);
+  const [selectedTab, setSelectedTab] = useState<TabKey>("pending");
 
   const fetchData = useCallback(async () => {
     const data = await getTestimonials();
@@ -35,401 +59,409 @@ export default function AdminTestimonialsPage() {
     fetchData();
   }, [fetchData]);
 
-  async function handleApprove(id: string) {
-    setApproving(id);
-    await updateTestimonialStatusAction(id, "approved");
+  async function handleApprove(id: string, name: string) {
+    setProcessingId(id);
+    const ok = await updateTestimonialStatusAction(id, "approved");
+    if (ok) {
+      toast.success(`Review by ${name} approved`);
+    } else {
+      toast.error("Failed to approve review");
+    }
     await fetchData();
-    setApproving(null);
+    setProcessingId(null);
   }
 
-  async function handleReject(id: string) {
-    setApproving(id);
-    await updateTestimonialStatusAction(id, "rejected");
+  async function handleReject(id: string, name: string) {
+    setProcessingId(id);
+    const ok = await updateTestimonialStatusAction(id, "rejected");
+    if (ok) {
+      toast("Review by " + name + " rejected");
+    } else {
+      toast.error("Failed to reject review");
+    }
     await fetchData();
-    setApproving(null);
+    setProcessingId(null);
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this testimonial?")) return;
-    setDeleting(id);
-    await deleteTestimonialAction(id);
+    if (!confirm("Are you sure you want to delete this review?")) return;
+    setProcessingId(id);
+    const ok = await deleteTestimonialAction(id);
+    if (ok) {
+      toast("Review deleted");
+    } else {
+      toast.error("Failed to delete review");
+    }
     await fetchData();
-    setDeleting(null);
+    setProcessingId(null);
   }
 
   const pending = testimonials.filter((t) => t.status === "pending");
   const approved = testimonials.filter((t) => t.status === "approved");
   const rejected = testimonials.filter((t) => t.status === "rejected");
 
-  const stats = {
-    total: testimonials.length,
-    pending: pending.length,
-    approved: approved.length,
-    avgRating:
-      testimonials.length > 0
-        ? (
-            testimonials.reduce((sum, t) => sum + t.rating, 0) / testimonials.length
-          ).toFixed(1)
-        : "0",
+  const tabData: Record<TabKey, TestimonialWithOrder[]> = {
+    pending,
+    approved,
+    rejected,
   };
+
+  const tabs: { key: TabKey; label: string; count: number }[] = [
+    { key: "pending", label: "Pending", count: pending.length },
+    { key: "approved", label: "Approved", count: approved.length },
+    { key: "rejected", label: "Rejected", count: rejected.length },
+  ];
+
+  const currentList = tabData[selectedTab];
 
   return (
     <div>
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold tracking-tight">Testimonials</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Manage customer reviews and feedback
-        </p>
-      </div>
+      {/* Header row: title + subtext left, tabs right */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          marginBottom: 0,
+          gap: 20,
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 27,
+              fontWeight: 750,
+              letterSpacing: "-.035em",
+              color: ink,
+              margin: 0,
+            }}
+          >
+            Reviews
+          </h1>
+          <p
+            style={{
+              fontSize: 13.5,
+              color: muted,
+              margin: "6px 0 0",
+              lineHeight: 1.5,
+            }}
+          >
+            Nothing appears on the storefront until you approve it. Match the
+            reviewer to an order before you do.
+          </p>
+        </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-8">
-        <div className="p-4 rounded-xl bg-card border border-border/50">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-            Total
-          </p>
-          <p className="text-2xl font-bold">{stats.total}</p>
-        </div>
-        <div className="p-4 rounded-xl bg-card border border-border/50">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-            Pending
-          </p>
-          <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
-        </div>
-        <div className="p-4 rounded-xl bg-card border border-border/50">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-            Approved
-          </p>
-          <p className="text-2xl font-bold text-green-600">{stats.approved}</p>
-        </div>
-        <div className="p-4 rounded-xl bg-card border border-border/50">
-          <p className="text-xs text-muted-foreground uppercase tracking-wider mb-1">
-            Avg Rating
-          </p>
-          <div className="flex items-center gap-1">
-            <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
-            <p className="text-2xl font-bold">{stats.avgRating}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3 rounded-xl bg-secondary h-11 mb-6">
-          <TabsTrigger value="pending" className="rounded-lg">
-            Pending ({pending.length})
-          </TabsTrigger>
-          <TabsTrigger value="approved" className="rounded-lg">
-            Approved ({approved.length})
-          </TabsTrigger>
-          <TabsTrigger value="rejected" className="rounded-lg">
-            Rejected ({rejected.length})
-          </TabsTrigger>
-        </TabsList>
-
-        {/* Pending Tab */}
-        <TabsContent value="pending">
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : pending.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No pending testimonials</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {pending.map((testimonial) => (
-                <div
-                  key={testimonial.id}
-                  className="p-4 rounded-xl bg-card border border-border/50 hover:bg-accent/30 transition-colors"
+        {/* Pill / segment tabs */}
+        <div
+          style={{
+            display: "flex",
+            gap: 1,
+            background: "#DCD3C5",
+            border: "1px solid #DCD3C5",
+            borderRadius: 2,
+            flexShrink: 0,
+          }}
+        >
+          {tabs.map((tab) => {
+            const isActive = selectedTab === tab.key;
+            return (
+              <span
+                key={tab.key}
+                onClick={() => setSelectedTab(tab.key)}
+                style={{
+                  padding: "8px 14px",
+                  fontSize: 12.5,
+                  fontWeight: isActive ? 650 : 500,
+                  fontFamily: "inherit",
+                  background: isActive ? ink : "#fff",
+                  color: isActive ? "#fff" : body,
+                  border: "none",
+                  cursor: "pointer",
+                  transition: "background .15s, color .15s",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 7,
+                  lineHeight: 1,
+                }}
+              >
+                {tab.label}
+                <span
+                  style={{
+                    fontSize: 11,
+                    opacity: isActive ? 0.65 : 0.7,
+                  }}
                 >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{testimonial.name}</h3>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {testimonial.location}
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < testimonial.rating
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-muted-foreground"
-                            }`}
-                          />
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {new Date(testimonial.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground line-clamp-2 cursor-pointer hover:underline"
-                        onClick={() => setViewingTestimonial(testimonial)}
-                      >
-                        {testimonial.content}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleApprove(testimonial.id)}
-                        disabled={approving === testimonial.id}
-                        className="rounded-lg text-green-600 hover:text-green-700"
-                      >
-                        {approving === testimonial.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Check className="w-4 h-4" />
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleReject(testimonial.id)}
-                        disabled={approving === testimonial.id}
-                        className="rounded-lg text-destructive hover:text-destructive"
-                      >
-                        {approving === testimonial.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <X className="w-4 h-4" />
-                        )}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(testimonial.id)}
-                        disabled={deleting === testimonial.id}
-                        className="rounded-lg text-destructive"
-                      >
-                        {deleting === testimonial.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Approved Tab */}
-        <TabsContent value="approved">
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : approved.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No approved testimonials yet</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {approved.map((testimonial) => (
-                <div
-                  key={testimonial.id}
-                  className="p-4 rounded-xl bg-card border border-green-200/50 bg-green-50/30"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{testimonial.name}</h3>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {testimonial.location}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] text-green-700 border-green-300">
-                          ✓ Approved
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < testimonial.rating
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-muted-foreground"
-                            }`}
-                          />
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {new Date(testimonial.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground line-clamp-2 cursor-pointer hover:underline"
-                        onClick={() => setViewingTestimonial(testimonial)}
-                      >
-                        {testimonial.content}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(testimonial.id)}
-                        disabled={deleting === testimonial.id}
-                        className="rounded-lg text-destructive"
-                      >
-                        {deleting === testimonial.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Rejected Tab */}
-        <TabsContent value="rejected">
-          {loading ? (
-            <div className="flex justify-center py-20">
-              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : rejected.length === 0 ? (
-            <div className="text-center py-12">
-              <p className="text-muted-foreground">No rejected testimonials</p>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              {rejected.map((testimonial) => (
-                <div
-                  key={testimonial.id}
-                  className="p-4 rounded-xl bg-card border border-red-200/50 bg-red-50/30"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-2">
-                        <h3 className="font-semibold">{testimonial.name}</h3>
-                        <Badge variant="secondary" className="text-[10px]">
-                          {testimonial.location}
-                        </Badge>
-                        <Badge variant="outline" className="text-[10px] text-red-700 border-red-300">
-                          ✗ Rejected
-                        </Badge>
-                      </div>
-                      <div className="flex items-center gap-2 mb-3">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className={`w-4 h-4 ${
-                              i < testimonial.rating
-                                ? "fill-amber-400 text-amber-400"
-                                : "text-muted-foreground"
-                            }`}
-                          />
-                        ))}
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {new Date(testimonial.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      <p className="text-sm text-foreground line-clamp-2 cursor-pointer hover:underline"
-                        onClick={() => setViewingTestimonial(testimonial)}
-                      >
-                        {testimonial.content}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(testimonial.id)}
-                        disabled={deleting === testimonial.id}
-                        className="rounded-lg text-destructive"
-                      >
-                        {deleting === testimonial.id ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <Trash2 className="w-4 h-4" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-      </Tabs>
-
-      {/* View Details Modal */}
-      {viewingTestimonial && (
-        <Dialog open={true} onOpenChange={() => setViewingTestimonial(null)}>
-          <DialogContent className="max-w-lg">
-            <DialogHeader>
-              <DialogTitle>{viewingTestimonial.name}</DialogTitle>
-              <DialogDescription>
-                {viewingTestimonial.location} • {new Date(viewingTestimonial.created_at).toLocaleDateString()}
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                {[...Array(5)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-4 h-4 ${
-                      i < viewingTestimonial.rating
-                        ? "fill-amber-400 text-amber-400"
-                        : "text-muted-foreground"
-                    }`}
-                  />
-                ))}
-                <span className="text-sm text-muted-foreground ml-2">
-                  {viewingTestimonial.rating} out of 5
+                  {tab.count}
                 </span>
-              </div>
-              <p className="text-foreground leading-relaxed">{viewingTestimonial.content}</p>
-              <div className="pt-4 border-t flex gap-2">
-                {viewingTestimonial.status === "pending" && (
-                  <>
-                    <Button
-                      onClick={() => {
-                        handleApprove(viewingTestimonial.id);
-                        setViewingTestimonial(null);
-                      }}
-                      className="rounded-lg"
-                    >
-                      <Check className="w-4 h-4 mr-2" />
-                      Approve
-                    </Button>
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        handleReject(viewingTestimonial.id);
-                        setViewingTestimonial(null);
-                      }}
-                      className="rounded-lg"
-                    >
-                      <X className="w-4 h-4 mr-2" />
-                      Reject
-                    </Button>
-                  </>
-                )}
-                <Button
-                  variant="outline"
-                  onClick={() => setViewingTestimonial(null)}
-                  className="rounded-lg"
-                >
-                  Close
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
+              </span>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Card grid */}
+      {loading ? (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "80px 0",
+          }}
+        >
+          <Loader2
+            className="animate-spin"
+            style={{ width: 22, height: 22, color: faint }}
+          />
+        </div>
+      ) : currentList.length === 0 ? (
+        <div
+          style={{
+            textAlign: "center",
+            padding: "60px 0",
+            color: muted,
+            fontSize: 14,
+          }}
+        >
+          No {selectedTab} reviews
+        </div>
+      ) : (
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(2, 1fr)",
+            gap: 16,
+            marginTop: 22,
+          }}
+        >
+          {currentList.map((t) => (
+            <ReviewCard
+              key={t.id}
+              testimonial={t}
+              processing={processingId === t.id}
+              onApprove={() => handleApprove(t.id, t.name)}
+              onReject={() => handleReject(t.id, t.name)}
+              onDelete={() => handleDelete(t.id)}
+            />
+          ))}
+        </div>
       )}
+    </div>
+  );
+}
+
+/* ── Review card ── */
+
+function ReviewCard({
+  testimonial: t,
+  processing,
+  onApprove,
+  onReject,
+  onDelete,
+}: {
+  testimonial: TestimonialWithOrder;
+  processing: boolean;
+  onApprove: () => void;
+  onReject: () => void;
+  onDelete: () => void;
+}) {
+  const canVerify = t.matched_order !== null;
+
+  // Build order match description
+  let orderMatchText = "";
+  if (canVerify) {
+    const parts: string[] = [`Matched to order #${t.matched_order!.ref}`];
+    if (t.matched_order!.items_summary) {
+      parts.push(`\u2014 ${t.matched_order!.items_summary}`);
+    }
+    if (
+      t.matched_order!.status === "delivered" ||
+      t.matched_order!.status === "completed"
+    ) {
+      parts.push(`, delivered ${formatDeliveryDate(t.matched_order!.created_at)}`);
+    }
+    orderMatchText = parts.join("");
+  }
+
+  return (
+    <div
+      style={{
+        border: `1px solid ${line}`,
+        background: "#fff",
+        padding: 20,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      {/* Row 1: Name + City on left, Stars on right */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          gap: 12,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span
+            style={{
+              fontWeight: 650,
+              fontSize: 13.5,
+              color: ink,
+            }}
+          >
+            {t.name}
+          </span>
+          {t.location && (
+            <span style={{ fontSize: 11.5, color: muted2 }}>{t.location}</span>
+          )}
+        </div>
+
+        {/* Stars */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 3,
+            flexShrink: 0,
+          }}
+        >
+          {[...Array(5)].map((_, i) => (
+            <svg
+              key={i}
+              width="13"
+              height="13"
+              viewBox="0 0 24 24"
+              style={{
+                fill: i < t.rating ? gold : "transparent",
+                stroke: i < t.rating ? "none" : line,
+                strokeWidth: i < t.rating ? 0 : 1.5,
+              }}
+            >
+              <polygon points="12,2 15.09,8.26 22,9.27 17,14.14 18.18,21.02 12,17.77 5.82,21.02 7,14.14 2,9.27 8.91,8.26" />
+            </svg>
+          ))}
+        </div>
+      </div>
+
+      {/* Row 2: email + days ago */}
+      <div style={{ fontSize: 11.5, color: faint, marginTop: 3 }}>
+        {t.email}
+        <span style={{ margin: "0 5px" }}>&middot;</span>
+        {daysAgo(t.created_at)}
+      </div>
+
+      {/* Row 3: Review body - full text, no truncation */}
+      <p
+        style={{
+          fontSize: 14,
+          lineHeight: 1.65,
+          color: bodyDark,
+          margin: "14px 0 0",
+        }}
+      >
+        {t.content}
+      </p>
+
+      {/* Row 4: Order match row with left border */}
+      <div
+        style={{
+          borderLeft: canVerify ? `2px solid ${gold}` : `2px solid ${warn}`,
+          background: canVerify ? "#FBF9F5" : warnBg,
+          padding: "10px 12px",
+          fontSize: 12,
+          marginTop: 14,
+        }}
+      >
+        {canVerify ? (
+          <span style={{ color: body }}>{orderMatchText}</span>
+        ) : (
+          <span style={{ color: warn, fontWeight: 550 }}>
+            No matching order &mdash; cannot be marked verified
+          </span>
+        )}
+      </div>
+
+      {/* Row 5: Action buttons left, product link right */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: 8,
+          marginTop: 16,
+        }}
+      >
+        {/* Approve button */}
+        {(t.status === "pending" || t.status === "rejected") && (
+          <button
+            onClick={onApprove}
+            disabled={processing}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              height: 36,
+              padding: "0 16px",
+              fontSize: 12.5,
+              fontWeight: 600,
+              fontFamily: "inherit",
+              background: ink,
+              color: "#fff",
+              border: "none",
+              borderRadius: 2,
+              cursor: processing ? "not-allowed" : "pointer",
+              opacity: processing ? 0.5 : 1,
+              transition: "opacity .15s",
+            }}
+          >
+            {processing ? (
+              <Loader2
+                className="animate-spin"
+                style={{ width: 14, height: 14 }}
+              />
+            ) : null}
+            Approve
+          </button>
+        )}
+
+        {/* Reject button - outlined */}
+        {(t.status === "pending" || t.status === "approved") && (
+          <button
+            onClick={onReject}
+            disabled={processing}
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              height: 36,
+              padding: "0 16px",
+              fontSize: 12.5,
+              fontWeight: 500,
+              fontFamily: "inherit",
+              background: "#fff",
+              color: body,
+              border: `1px solid #DCD3C5`,
+              borderRadius: 2,
+              cursor: processing ? "not-allowed" : "pointer",
+              opacity: processing ? 0.5 : 1,
+              transition: "opacity .15s",
+            }}
+          >
+            Reject
+          </button>
+        )}
+
+        {/* Product name link on far right */}
+        <span
+          style={{
+            marginLeft: "auto",
+            fontSize: 12,
+            color: "#7C7268",
+            cursor: "pointer",
+          }}
+        >
+          {t.product_name || "No product selected"}
+        </span>
+      </div>
     </div>
   );
 }

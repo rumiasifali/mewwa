@@ -5,12 +5,10 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { deleteImageFromUrl } from "@/lib/supabase/storage";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
-import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -22,6 +20,25 @@ import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { RichEditor } from "@/components/admin/rich-editor";
 
+/* ── Design tokens ── */
+const C = {
+  ink: "#1A1512",
+  gold: "#C8922E",
+  line: "#E7E1D7",
+  line2: "#F0EBE3",
+  muted: "#7C7268",
+  muted2: "#9A9086",
+  body: "#4A4139",
+  faint: "#B0A69A",
+  warn: "#B4551F",
+  okColor: "#2E5A22",
+  okBg: "#E6EFE0",
+  warnBg: "#F7EBDA",
+  headerBg: "#FBF9F5",
+  thumbBg: "#EDE7DC",
+  thumbBorder: "#E0D8CA",
+};
+
 interface Post {
   id: string;
   title: string;
@@ -31,6 +48,7 @@ interface Post {
   cover_image: string;
   published: boolean;
   created_at: string;
+  category?: string;
 }
 
 export default function AdminPostsPage() {
@@ -136,131 +154,448 @@ export default function AdminPostsPage() {
     fetchData();
   }
 
+  /* ── Helpers ── */
+  const publishedCount = posts.filter((p) => p.published).length;
+  const draftCount = posts.filter((p) => !p.published).length;
+
+  function formatDate(dateStr: string) {
+    const d = new Date(dateStr);
+    return d.toLocaleDateString("en-GB", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  }
+
+  /* #15/#16 — Column header style: letterSpacing .14em, color #9A9086 */
+  const colHead: React.CSSProperties = {
+    fontSize: 10,
+    fontWeight: 700,
+    letterSpacing: ".14em",
+    textTransform: "uppercase",
+    color: C.muted2,
+  };
+
+  const gridCols = "56px 2fr .8fr .7fr .7fr .5fr";
+
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
+      {/* #1 — Header: alignItems flex-end */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+        }}
+      >
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Posts</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Blog content for SEO and engagement
+          {/* #3 — letterSpacing -.035em */}
+          <h1
+            style={{
+              fontSize: 27,
+              fontWeight: 750,
+              color: C.ink,
+              letterSpacing: "-.035em",
+              lineHeight: 1.15,
+              margin: 0,
+            }}
+          >
+            Journal
+          </h1>
+          {/* #4/#5 — marginTop 6, no letterSpacing */}
+          <p
+            style={{
+              fontSize: 13.5,
+              color: C.muted,
+              marginTop: 6,
+            }}
+          >
+            {publishedCount} published &middot; {draftCount} draft
+            {draftCount !== 1 ? "s" : ""}. Only published posts are fetched by
+            the storefront.
           </p>
         </div>
-        <Button onClick={openCreate} className="rounded-xl">
-          <Plus className="w-4 h-4 mr-2" />
-          New Post
-        </Button>
+        {/* #6/#7/#8/#9/#10/#11/#12 — button fixes */}
+        <button
+          onClick={openCreate}
+          style={{
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 8,
+            padding: "0 16px",
+            height: 38,
+            background: C.ink,
+            color: "#fff",
+            border: "none",
+            borderRadius: 2,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            transition: "opacity .15s",
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+          onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+        >
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
+            <path d="M12 5v14M5 12h14" />
+          </svg>
+          Write a post
+        </button>
       </div>
 
+      {/* ── Loading ── */}
       {loading ? (
-        <div className="flex justify-center py-20">
-          <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            padding: "80px 0",
+          }}
+        >
+          <Loader2
+            style={{
+              width: 22,
+              height: 22,
+              color: C.faint,
+              animation: "spin 1s linear infinite",
+            }}
+          />
         </div>
       ) : posts.length === 0 ? (
-        <div className="text-center py-20">
-          <p className="text-muted-foreground">No posts yet.</p>
-          <Button
+        /* #27 — Empty state: no borderRadius */
+        <div
+          style={{
+            marginTop: 22,
+            border: `1px solid ${C.line}`,
+            background: "#fff",
+            padding: "64px 24px",
+            textAlign: "center",
+          }}
+        >
+          <p style={{ color: C.muted2, fontSize: 13.5, margin: 0 }}>
+            No posts yet. Start writing to build your journal.
+          </p>
+          <button
             onClick={openCreate}
-            variant="outline"
-            className="mt-4 rounded-xl"
+            style={{
+              marginTop: 16,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "7px 16px",
+              background: "transparent",
+              border: `1px solid ${C.line}`,
+              borderRadius: 2,
+              fontSize: 12,
+              fontWeight: 600,
+              color: C.body,
+              cursor: "pointer",
+              transition: "background .12s",
+            }}
+            onMouseEnter={(e) =>
+              (e.currentTarget.style.background = C.headerBg)
+            }
+            onMouseLeave={(e) =>
+              (e.currentTarget.style.background = "transparent")
+            }
           >
-            <Plus className="w-4 h-4 mr-2" />
+            <Plus style={{ width: 13, height: 13 }} />
             Write your first post
-          </Button>
+          </button>
         </div>
       ) : (
-        <div className="space-y-2">
+        /* #2/#26/#32 — Posts table: marginTop 22, no borderRadius, no overflow */
+        <div
+          style={{
+            marginTop: 22,
+            border: `1px solid ${C.line}`,
+            background: "#fff",
+          }}
+        >
+          {/* #13/#14 — Table header: borderBottom #F0EBE3, gap 14 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: gridCols,
+              alignItems: "center",
+              gap: 14,
+              padding: "10px 18px",
+              background: C.headerBg,
+              borderBottom: `1px solid ${C.line2}`,
+            }}
+          >
+            <span />
+            <span style={colHead}>Post</span>
+            <span style={colHead}>Category</span>
+            <span style={colHead}>Date</span>
+            <span style={colHead}>Status</span>
+            <span />
+          </div>
+
+          {/* Table rows */}
           {posts.map((post) => (
             <div
               key={post.id}
-              className="flex items-center gap-4 p-4 rounded-xl bg-card border border-border/50"
+              className="qaaq-row"
+              style={{
+                display: "grid",
+                gridTemplateColumns: gridCols,
+                alignItems: "center",
+                gap: 14, /* #19 */
+                padding: "11px 18px",
+                borderBottom: `1px solid ${C.line2}`,
+                cursor: "default",
+              }}
             >
-              <div className="w-14 h-10 rounded-lg bg-secondary flex items-center justify-center shrink-0 overflow-hidden">
+              {/* #17/#18 — Thumbnail: height 38, no borderRadius */}
+              <div
+                style={{
+                  width: 56,
+                  height: 38,
+                  background: C.thumbBg,
+                  border: `1px solid ${C.thumbBorder}`,
+                  overflow: "hidden",
+                  flexShrink: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
                 {post.cover_image ? (
                   <img
                     src={post.cover_image}
                     alt={post.title}
-                    className="w-full h-full object-cover"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                      display: "block",
+                    }}
                   />
                 ) : (
-                  <span className="text-lg opacity-30">📝</span>
+                  /* #31 — empty placeholder, no emoji */
+                  <span />
                 )}
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-medium text-sm truncate">
-                    {post.title}
-                  </h3>
-                  <Badge
-                    variant={post.published ? "default" : "secondary"}
-                    className="text-[10px]"
-                  >
-                    {post.published ? "Published" : "Draft"}
-                  </Badge>
-                </div>
-                <p className="text-xs text-muted-foreground mt-0.5 truncate">
-                  {post.excerpt || "No excerpt"}
-                </p>
-              </div>
-              <p className="text-xs text-muted-foreground hidden sm:block">
-                {new Date(post.created_at).toLocaleDateString()}
-              </p>
-              <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => openEdit(post)}
-                  className="rounded-lg"
+
+              {/* POST: title + slug */}
+              <div style={{ minWidth: 0 }}>
+                {/* #21 — fontWeight 600 */}
+                <div
+                  style={{
+                    fontSize: 12.5,
+                    fontWeight: 600,
+                    color: C.ink,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
                 >
-                  <Pencil className="w-3.5 h-3.5" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
+                  {post.title}
+                </div>
+                {/* #22 — no marginTop */}
+                <div
+                  style={{
+                    fontFamily: "ui-monospace, monospace",
+                    fontSize: 11,
+                    color: C.faint,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  /blog/{post.slug}
+                </div>
+              </div>
+
+              {/* Category */}
+              <span
+                style={{
+                  fontSize: 12,
+                  color: C.body,
+                }}
+              >
+                {(post as Post & { category?: string }).category || "Blog"}
+              </span>
+
+              {/* Date */}
+              <span
+                style={{
+                  fontSize: 12,
+                  color: C.muted,
+                }}
+              >
+                {formatDate(post.created_at)}
+              </span>
+
+              {/* #24 — Status badge: no borderRadius */}
+              <span
+                style={{
+                  display: "inline-block",
+                  fontSize: 10,
+                  fontWeight: 700,
+                  letterSpacing: ".1em",
+                  textTransform: "uppercase",
+                  padding: "3px 7px",
+                  color: post.published ? C.okColor : C.warn,
+                  background: post.published ? C.okBg : C.warnBg,
+                  alignSelf: "center",
+                  justifySelf: "start",
+                  width: "fit-content",
+                }}
+              >
+                {post.published ? "Published" : "Draft"}
+              </span>
+
+              {/* #28 — Actions: no padding on buttons */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 8,
+                  justifySelf: "end",
+                }}
+              >
+                <span
+                  onClick={() => openEdit(post)}
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                  }}
+                  title="Edit post"
+                >
+                  <Pencil
+                    style={{ width: 14, height: 14, color: C.muted }}
+                  />
+                </span>
+                <span
                   onClick={() => {
                     setEditing(post);
                     setDeleteDialogOpen(true);
                   }}
-                  className="rounded-lg text-destructive hover:text-destructive"
+                  style={{
+                    cursor: "pointer",
+                    display: "flex",
+                  }}
+                  title="Delete post"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </Button>
+                  <Trash2
+                    style={{ width: 14, height: 14, color: C.warn }}
+                  />
+                </span>
               </div>
             </div>
           ))}
         </div>
       )}
 
-      {/* Create/Edit Panel */}
+      {/* ── Create/Edit Slide Panel ── */}
       {dialogOpen && (
-        <div className="fixed inset-0 z-50">
+        <div style={{ position: "fixed", inset: 0, zIndex: 50 }}>
           <div
-            className="absolute inset-0 z-0 bg-black/40"
+            style={{
+              position: "absolute",
+              inset: 0,
+              zIndex: 0,
+              background: "rgba(0,0,0,0.4)",
+            }}
             onClick={() => setDialogOpen(false)}
           />
-          <div className="absolute inset-y-0 right-0 z-10 w-full max-w-2xl bg-background shadow-xl overflow-y-auto">
-            <div className="p-6 sm:p-8">
-              <div className="flex items-center justify-between mb-6">
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 10,
+              width: "100%",
+              maxWidth: 680,
+              background: "#fff",
+              boxShadow: "-8px 0 32px rgba(0,0,0,.08)",
+              overflowY: "auto",
+            }}
+          >
+            <div style={{ padding: "28px 32px" }}>
+              {/* Panel header */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginBottom: 28,
+                }}
+              >
                 <div>
-                  <h2 className="text-lg font-semibold">
+                  <h2
+                    style={{
+                      fontSize: 18,
+                      fontWeight: 700,
+                      color: C.ink,
+                      margin: 0,
+                    }}
+                  >
                     {editing ? "Edit Post" : "New Post"}
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p
+                    style={{
+                      fontSize: 12.5,
+                      color: C.muted,
+                      marginTop: 3,
+                    }}
+                  >
                     {editing ? "Update your post." : "Create a new blog post."}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setDialogOpen(false)}
-                  className="w-8 h-8 rounded-lg flex items-center justify-center hover:bg-accent transition-colors"
+                  style={{
+                    width: 32,
+                    height: 32,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    background: "none",
+                    border: `1px solid ${C.line}`,
+                    borderRadius: 2,
+                    cursor: "pointer",
+                    transition: "background .12s",
+                  }}
+                  onMouseEnter={(e) =>
+                    (e.currentTarget.style.background = C.headerBg)
+                  }
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.background = "transparent")
+                  }
                 >
-                  <X className="w-4 h-4" />
+                  <X style={{ width: 15, height: 15, color: C.muted }} />
                 </button>
               </div>
 
-              <form onSubmit={handleSave} className="space-y-5">
-                <div className="grid sm:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Title</Label>
+              {/* Form */}
+              <form onSubmit={handleSave}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 16,
+                    marginBottom: 20,
+                  }}
+                >
+                  <div>
+                    <Label
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 650,
+                        letterSpacing: ".06em",
+                        textTransform: "uppercase",
+                        color: C.muted,
+                        display: "block",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Title
+                    </Label>
                     <Input
                       value={form.title}
                       onChange={(e) =>
@@ -274,23 +609,56 @@ export default function AdminPostsPage() {
                       }
                       placeholder="Health Benefits of Almonds"
                       required
-                      className="rounded-lg"
+                      style={{
+                        borderRadius: 2,
+                        borderColor: C.line,
+                        fontSize: 13,
+                      }}
                     />
                   </div>
-                  <div className="space-y-2">
-                    <Label>Slug</Label>
+                  <div>
+                    <Label
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 650,
+                        letterSpacing: ".06em",
+                        textTransform: "uppercase",
+                        color: C.muted,
+                        display: "block",
+                        marginBottom: 6,
+                      }}
+                    >
+                      Slug
+                    </Label>
                     <Input
                       value={form.slug}
                       onChange={(e) =>
                         setForm((f) => ({ ...f, slug: e.target.value }))
                       }
-                      className="rounded-lg"
+                      style={{
+                        borderRadius: 2,
+                        borderColor: C.line,
+                        fontSize: 13,
+                        fontFamily: "ui-monospace, monospace",
+                      }}
                     />
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Cover Image</Label>
+                <div style={{ marginBottom: 20 }}>
+                  <Label
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 650,
+                      letterSpacing: ".06em",
+                      textTransform: "uppercase",
+                      color: C.muted,
+                      display: "block",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Cover Image
+                  </Label>
                   <ImageUpload
                     value={form.cover_image}
                     onChange={(url) =>
@@ -299,8 +667,20 @@ export default function AdminPostsPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Excerpt</Label>
+                <div style={{ marginBottom: 20 }}>
+                  <Label
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 650,
+                      letterSpacing: ".06em",
+                      textTransform: "uppercase",
+                      color: C.muted,
+                      display: "block",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Excerpt
+                  </Label>
                   <Textarea
                     value={form.excerpt}
                     onChange={(e) =>
@@ -308,12 +688,29 @@ export default function AdminPostsPage() {
                     }
                     placeholder="Brief summary for SEO and previews..."
                     rows={2}
-                    className="rounded-lg resize-none"
+                    style={{
+                      borderRadius: 2,
+                      borderColor: C.line,
+                      fontSize: 13,
+                      resize: "none",
+                    }}
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Content</Label>
+                <div style={{ marginBottom: 20 }}>
+                  <Label
+                    style={{
+                      fontSize: 11,
+                      fontWeight: 650,
+                      letterSpacing: ".06em",
+                      textTransform: "uppercase",
+                      color: C.muted,
+                      display: "block",
+                      marginBottom: 6,
+                    }}
+                  >
+                    Content
+                  </Label>
                   <RichEditor
                     value={form.content}
                     onChange={(html) =>
@@ -322,31 +719,99 @@ export default function AdminPostsPage() {
                   />
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    marginBottom: 24,
+                  }}
+                >
                   <Switch
                     checked={form.published}
                     onCheckedChange={(v) =>
                       setForm((f) => ({ ...f, published: v }))
                     }
                   />
-                  <Label>Publish</Label>
+                  <Label
+                    style={{
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: C.body,
+                    }}
+                  >
+                    Publish
+                  </Label>
                 </div>
 
-                <div className="flex justify-end gap-3 pt-4 border-t">
-                  <Button
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 10,
+                    paddingTop: 20,
+                    borderTop: `1px solid ${C.line}`,
+                  }}
+                >
+                  <button
                     type="button"
-                    variant="outline"
                     onClick={() => setDialogOpen(false)}
-                    className="rounded-xl"
+                    style={{
+                      padding: "8px 20px",
+                      background: "transparent",
+                      border: `1px solid ${C.line}`,
+                      borderRadius: 2,
+                      fontSize: 12.5,
+                      fontWeight: 600,
+                      color: C.body,
+                      cursor: "pointer",
+                      transition: "background .12s",
+                    }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.background = C.headerBg)
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.background = "transparent")
+                    }
                   >
                     Cancel
-                  </Button>
-                  <Button type="submit" disabled={saving} className="rounded-xl">
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={saving}
+                    style={{
+                      padding: "8px 22px",
+                      background: C.ink,
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 2,
+                      fontSize: 12.5,
+                      fontWeight: 650,
+                      cursor: saving ? "not-allowed" : "pointer",
+                      opacity: saving ? 0.6 : 1,
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      transition: "opacity .15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!saving) e.currentTarget.style.opacity = "0.85";
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!saving) e.currentTarget.style.opacity = "1";
+                    }}
+                  >
                     {saving && (
-                      <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                      <Loader2
+                        style={{
+                          width: 14,
+                          height: 14,
+                          animation: "spin 1s linear infinite",
+                        }}
+                      />
                     )}
                     {editing ? "Update" : "Create"}
-                  </Button>
+                  </button>
                 </div>
               </form>
             </div>
@@ -354,30 +819,78 @@ export default function AdminPostsPage() {
         </div>
       )}
 
-      {/* Delete Confirmation */}
+      {/* ── Delete Confirmation ── */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent className="max-w-sm">
+        <DialogContent style={{ maxWidth: 380, borderRadius: 2 }}>
           <DialogHeader>
-            <DialogTitle>Delete Post</DialogTitle>
-            <DialogDescription>
+            <DialogTitle
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: C.ink,
+              }}
+            >
+              Delete Post
+            </DialogTitle>
+            <DialogDescription
+              style={{
+                fontSize: 13,
+                color: C.muted,
+                marginTop: 4,
+              }}
+            >
               Are you sure you want to delete &ldquo;{editing?.title}&rdquo;?
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end gap-3 mt-4">
-            <Button
-              variant="outline"
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "flex-end",
+              gap: 10,
+              marginTop: 20,
+            }}
+          >
+            <button
               onClick={() => setDeleteDialogOpen(false)}
-              className="rounded-xl"
+              style={{
+                padding: "7px 18px",
+                background: "transparent",
+                border: `1px solid ${C.line}`,
+                borderRadius: 2,
+                fontSize: 12.5,
+                fontWeight: 600,
+                color: C.body,
+                cursor: "pointer",
+                transition: "background .12s",
+              }}
+              onMouseEnter={(e) =>
+                (e.currentTarget.style.background = C.headerBg)
+              }
+              onMouseLeave={(e) =>
+                (e.currentTarget.style.background = "transparent")
+              }
             >
               Cancel
-            </Button>
-            <Button
-              variant="destructive"
+            </button>
+            <button
               onClick={handleDelete}
-              className="rounded-xl"
+              style={{
+                padding: "7px 18px",
+                background: C.warn,
+                color: "#fff",
+                border: "none",
+                borderRadius: 2,
+                fontSize: 12.5,
+                fontWeight: 650,
+                cursor: "pointer",
+                transition: "opacity .15s",
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
+              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
             >
               Delete
-            </Button>
+            </button>
           </div>
         </DialogContent>
       </Dialog>

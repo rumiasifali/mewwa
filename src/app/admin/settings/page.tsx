@@ -4,10 +4,7 @@ export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Loader2, Save, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 interface Settings {
   id: string;
@@ -18,12 +15,124 @@ interface Settings {
   phone: string;
   address: string;
   currency: string;
+  flat_rate?: string;
+  free_shipping_threshold?: string;
+  announcement_text?: string;
   social_links: {
     instagram?: string;
     facebook?: string;
   };
 }
 
+/* ── design tokens ────────────────────────────────── */
+const INK = "#1A1512";
+const GOLD = "#C8922E";
+const LINE = "#E7E1D7";
+const MUTED = "#7C7268";
+const MUTED2 = "#9A9086";
+const BODY = "#4A4139";
+const FAINT = "#B0A69A";
+const INPUT_BORDER = "#DCD3C5";
+const HINT_COLOR = "#B0A69A";
+
+/* ── shared inline-style objects ──────────────────── */
+const eyebrowStyle: React.CSSProperties = {
+  fontSize: "10.5px",
+  letterSpacing: ".18em",
+  textTransform: "uppercase",
+  fontWeight: 700,
+  color: INK,
+  margin: 0,
+};
+
+const cardNoteStyle: React.CSSProperties = {
+  fontSize: "12.5px",
+  color: MUTED2,
+  marginTop: 8,
+  marginBottom: 0,
+  lineHeight: 1.5,
+};
+
+const labelStyle: React.CSSProperties = {
+  fontSize: "11px",
+  letterSpacing: ".14em",
+  textTransform: "uppercase",
+  fontWeight: 700,
+  color: BODY,
+  display: "block",
+};
+
+const inputStyle: React.CSSProperties = {
+  height: 38,
+  border: `1px solid ${INPUT_BORDER}`,
+  borderRadius: 2,
+  fontSize: "13.5px",
+  color: INK,
+  padding: "0 12px",
+  width: "100%",
+  outline: "none",
+  background: "#fff",
+  boxSizing: "border-box",
+  marginTop: 7,
+  fontFamily: "Geist, sans-serif",
+};
+
+const hintStyle: React.CSSProperties = {
+  fontSize: "11px",
+  color: HINT_COLOR,
+  marginTop: 5,
+  marginBottom: 0,
+};
+
+const cardStyle: React.CSSProperties = {
+  border: `1px solid ${LINE}`,
+  background: "#fff",
+  padding: 22,
+};
+
+const fieldGap = 14;
+
+/* ── helpers ──────────────────────────────────────── */
+
+function Field({
+  label,
+  value,
+  onChange,
+  placeholder,
+  hint,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+  hint?: string;
+  type?: string;
+}) {
+  return (
+    <div>
+      <label style={labelStyle}>{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        style={inputStyle}
+        onFocus={(e) => {
+          e.currentTarget.style.borderColor = INK;
+          e.currentTarget.style.boxShadow = `0 0 0 3px rgba(200,146,46,.2)`;
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.borderColor = INPUT_BORDER;
+          e.currentTarget.style.boxShadow = "none";
+        }}
+      />
+      {hint && <div style={hintStyle}>{hint}</div>}
+    </div>
+  );
+}
+
+/* ── page ─────────────────────────────────────────── */
 export default function AdminSettingsPage() {
   const [settings, setSettings] = useState<Settings | null>(null);
   const [loading, setLoading] = useState(true);
@@ -65,18 +174,31 @@ export default function AdminSettingsPage() {
     );
   }
 
+  /* loading state */
   if (loading) {
     return (
-      <div className="flex justify-center py-20">
-        <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "center",
+          paddingTop: 80,
+          paddingBottom: 80,
+        }}
+      >
+        <Loader2
+          size={22}
+          style={{ animation: "spin 1s linear infinite", color: MUTED }}
+        />
+        <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       </div>
     );
   }
 
+  /* empty state */
   if (!settings) {
     return (
-      <div className="text-center py-20">
-        <p className="text-muted-foreground">
+      <div style={{ textAlign: "center", paddingTop: 80, paddingBottom: 80 }}>
+        <p style={{ color: MUTED, fontSize: 14 }}>
           No settings found. Run the database schema first.
         </p>
       </div>
@@ -84,132 +206,218 @@ export default function AdminSettingsPage() {
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Configure your store details
-        </p>
+    <form onSubmit={handleSave}>
+      {/* ── page header ────────────────────────────── */}
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-end",
+          justifyContent: "space-between",
+          marginBottom: 0,
+          gap: 20,
+        }}
+      >
+        <div>
+          <h1
+            style={{
+              fontSize: 27,
+              fontWeight: 750,
+              letterSpacing: "-.035em",
+              color: INK,
+              margin: 0,
+            }}
+          >
+            Settings
+          </h1>
+          <p style={{ fontSize: 13.5, color: MUTED, marginTop: 6, marginBottom: 0 }}>
+            One row in{" "}
+            <span
+              style={{
+                fontFamily: "ui-monospace, monospace",
+                fontSize: 12.5,
+                background: "#F0EBE3",
+                padding: "1px 5px",
+                borderRadius: 2,
+              }}
+            >
+              site_settings
+            </span>
+            . Everything here is read by the storefront at build.
+          </p>
+        </div>
+
+        {/* save button */}
+        <button
+          type="submit"
+          disabled={saving}
+          style={{
+            height: 38,
+            padding: "0 18px",
+            background: saving ? MUTED : INK,
+            color: "#fff",
+            border: "none",
+            borderRadius: 2,
+            fontSize: "13px",
+            fontWeight: 600,
+            cursor: saving ? "not-allowed" : "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 7,
+            transition: "background .15s",
+            whiteSpace: "nowrap",
+          }}
+          onMouseEnter={(e) => {
+            if (!saving) e.currentTarget.style.background = GOLD;
+          }}
+          onMouseLeave={(e) => {
+            if (!saving) e.currentTarget.style.background = INK;
+          }}
+        >
+          {saving ? (
+            <>
+              <Loader2
+                size={14}
+                style={{ animation: "spin 1s linear infinite" }}
+              />
+              Saving...
+            </>
+          ) : saved ? (
+            "Saved"
+          ) : (
+            "Save changes"
+          )}
+        </button>
       </div>
 
-      <form onSubmit={handleSave} className="max-w-2xl space-y-8">
-        {/* General */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold">General</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Site Name</Label>
-              <Input
-                value={settings.site_name}
-                onChange={(e) => update("site_name", e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Tagline</Label>
-              <Input
-                value={settings.tagline}
-                onChange={(e) => update("tagline", e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>Currency</Label>
-            <Input
+      {/* ── 2x2 grid ───────────────────────────────── */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 20,
+          marginTop: 22,
+          alignItems: "start",
+        }}
+      >
+        {/* ── 1. STORE ──────────────────────────────── */}
+        <div style={cardStyle}>
+          <p style={eyebrowStyle}>STORE</p>
+          <p style={cardNoteStyle}>
+            Name and tagline used in metadata and the footer.
+          </p>
+
+          <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: fieldGap }}>
+            <Field
+              label="SITE_NAME"
+              value={settings.site_name}
+              onChange={(v) => update("site_name", v)}
+              hint="site_settings.site_name"
+            />
+            <Field
+              label="TAGLINE"
+              value={settings.tagline}
+              onChange={(v) => update("tagline", v)}
+              hint="site_settings.tagline"
+            />
+            <Field
+              label="CURRENCY"
               value={settings.currency}
-              onChange={(e) => update("currency", e.target.value)}
-              placeholder="PKR"
-              className="rounded-lg w-32"
+              onChange={(v) => update("currency", v)}
+              hint="Affects every price on the storefront"
             />
           </div>
-        </section>
-
-        {/* Contact */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold">Contact</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>WhatsApp Number</Label>
-              <Input
-                value={settings.whatsapp_number}
-                onChange={(e) => update("whatsapp_number", e.target.value)}
-                placeholder="923001234567"
-                className="rounded-lg"
-              />
-              <p className="text-xs text-muted-foreground">
-                Country code + number, no spaces or dashes
-              </p>
-            </div>
-            <div className="space-y-2">
-              <Label>Phone</Label>
-              <Input
-                value={settings.phone}
-                onChange={(e) => update("phone", e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-          </div>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Email</Label>
-              <Input
-                value={settings.email}
-                onChange={(e) => update("email", e.target.value)}
-                type="email"
-                className="rounded-lg"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Address</Label>
-              <Input
-                value={settings.address}
-                onChange={(e) => update("address", e.target.value)}
-                className="rounded-lg"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Social */}
-        <section className="space-y-4">
-          <h2 className="text-lg font-semibold">Social Media</h2>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label>Instagram URL</Label>
-              <Input
-                value={settings.social_links?.instagram || ""}
-                onChange={(e) => updateSocial("instagram", e.target.value)}
-                placeholder="https://instagram.com/..."
-                className="rounded-lg"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Facebook URL</Label>
-              <Input
-                value={settings.social_links?.facebook || ""}
-                onChange={(e) => updateSocial("facebook", e.target.value)}
-                placeholder="https://facebook.com/..."
-                className="rounded-lg"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* Save */}
-        <div className="pt-4 border-t">
-          <Button type="submit" disabled={saving} className="rounded-xl">
-            {saving ? (
-              <Loader2 className="w-4 h-4 animate-spin mr-2" />
-            ) : saved ? (
-              <Check className="w-4 h-4 mr-2" />
-            ) : (
-              <Save className="w-4 h-4 mr-2" />
-            )}
-            {saved ? "Saved!" : "Save Settings"}
-          </Button>
         </div>
-      </form>
-    </div>
+
+        {/* ── 2. CONTACT ────────────────────────────── */}
+        <div style={cardStyle}>
+          <p style={eyebrowStyle}>CONTACT</p>
+          <p style={cardNoteStyle}>
+            The WhatsApp number powers every order button.
+          </p>
+
+          <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: fieldGap }}>
+            <Field
+              label="WHATSAPP_NUMBER"
+              value={settings.whatsapp_number}
+              onChange={(v) => update("whatsapp_number", v)}
+              hint="No plus, no spaces — used to build wa.me links"
+            />
+            <Field
+              label="EMAIL"
+              value={settings.email}
+              onChange={(v) => update("email", v)}
+              type="email"
+              hint="site_settings.email"
+            />
+            <Field
+              label="PHONE"
+              value={settings.phone}
+              onChange={(v) => update("phone", v)}
+              hint="site_settings.phone"
+            />
+            <Field
+              label="ADDRESS"
+              value={settings.address}
+              onChange={(v) => update("address", v)}
+              hint="Shown in the footer"
+            />
+          </div>
+        </div>
+
+        {/* ── 3. SHIPPING ───────────────────────────── */}
+        <div style={cardStyle}>
+          <p style={eyebrowStyle}>SHIPPING</p>
+          <p style={cardNoteStyle}>
+            New fields — the top bar and shipping tab read these.
+          </p>
+
+          <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: fieldGap }}>
+            <Field
+              label="FLAT_RATE (PKR)"
+              value={settings.flat_rate || ""}
+              onChange={(v) => update("flat_rate", v)}
+              hint="Domestic courier"
+            />
+            <Field
+              label="FREE_SHIPPING_OVER (PKR)"
+              value={settings.free_shipping_threshold || ""}
+              onChange={(v) => update("free_shipping_threshold", v)}
+              hint="Drives the announcement bar copy"
+            />
+            <Field
+              label="ANNOUNCEMENT_BAR"
+              value={settings.announcement_text || ""}
+              onChange={(v) => update("announcement_text", v)}
+              hint="Leave empty to hide the bar"
+            />
+          </div>
+        </div>
+
+        {/* ── 4. SOCIAL ─────────────────────────────── */}
+        <div style={cardStyle}>
+          <p style={eyebrowStyle}>SOCIAL</p>
+          <p style={cardNoteStyle}>
+            Rendered as the footer icon row.
+          </p>
+
+          <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: fieldGap }}>
+            <Field
+              label="INSTAGRAM"
+              value={settings.social_links?.instagram || ""}
+              onChange={(v) => updateSocial("instagram", v)}
+              hint="social_links.instagram"
+            />
+            <Field
+              label="FACEBOOK"
+              value={settings.social_links?.facebook || ""}
+              onChange={(v) => updateSocial("facebook", v)}
+              hint="social_links.facebook"
+            />
+          </div>
+        </div>
+      </div>
+
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+    </form>
   );
 }

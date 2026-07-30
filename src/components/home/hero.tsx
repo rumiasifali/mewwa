@@ -36,6 +36,7 @@ export function Hero() {
         height: "100vh",
         maxHeight: 900,
         backgroundColor: "#1A1512",
+        paddingTop: 100,
       }}
     >
       {/* Background image */}
@@ -68,13 +69,14 @@ export function Hero() {
 
       {/* Content */}
       <div
-        className="relative z-10 w-full mx-auto flex items-center"
-        style={{ maxWidth: 1400, padding: "0 28px" }}
+        className="relative z-10 w-full mx-auto flex"
+        style={{ maxWidth: 1400, padding: "0 28px", flexDirection: "column", justifyContent: "center" }}
       >
         <div style={{ maxWidth: 760 }}>
           {/* Eyebrow */}
           <motion.div
-            className="flex items-center gap-3"
+            className="flex items-center"
+            style={{ gap: 14 }}
             {...fadeInItem(0.1)}
           >
             <span
@@ -101,8 +103,8 @@ export function Hero() {
 
           {/* H1 */}
           <h1
-            className="mt-7"
             style={{
+              marginTop: 26,
               fontSize: "clamp(52px, 6.6vw, 104px)",
               lineHeight: 0.92,
               letterSpacing: "-.045em",
@@ -149,8 +151,8 @@ export function Hero() {
 
           {/* CTA Buttons */}
           <motion.div
-            className="mt-9 flex items-center"
-            style={{ gap: 12 }}
+            className="flex items-center flex-wrap"
+            style={{ gap: 12, marginTop: 38 }}
             {...fadeUpItem(0.76)}
           >
             {/* Primary */}
@@ -166,11 +168,11 @@ export function Hero() {
                 fontWeight: 600,
                 borderRadius: 3,
                 textDecoration: "none",
-                gap: 8,
+                gap: 12,
               }}
             >
               Shop the collection
-              <ArrowRight size={16} strokeWidth={2.2} />
+              <ArrowRight size={17} strokeWidth={2} />
             </Link>
 
             {/* Secondary — WhatsApp */}
@@ -186,7 +188,7 @@ export function Hero() {
                 color: "white",
                 backgroundColor: "rgba(255,255,255,.06)",
                 fontSize: 15,
-                fontWeight: 600,
+                fontWeight: 500,
                 borderRadius: 3,
                 textDecoration: "none",
                 gap: 10,
@@ -198,21 +200,13 @@ export function Hero() {
                 style={{ width: 7, height: 7 }}
               >
                 <span
-                  className="absolute inset-0 animate-ping"
-                  style={{
-                    borderRadius: "50%",
-                    backgroundColor: "#3FD97F",
-                    opacity: 0.6,
-                  }}
-                />
-                <span
                   className="relative block"
                   style={{
                     width: 7,
                     height: 7,
                     borderRadius: "50%",
                     backgroundColor: "#3FD97F",
-                    boxShadow: "0 0 8px 2px rgba(63,217,127,.45)",
+                    boxShadow: "0 0 0 4px rgba(63,217,127,.22)",
                   }}
                 />
               </span>
@@ -222,7 +216,8 @@ export function Hero() {
 
           {/* Stats row */}
           <motion.div
-            className="mt-12 flex items-start flex-wrap"
+            className="flex items-start flex-wrap"
+            style={{ marginTop: 64 }}
             {...fadeInItem(1)}
           >
             {STATS.map((stat, i) => (

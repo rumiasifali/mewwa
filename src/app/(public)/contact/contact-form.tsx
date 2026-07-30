@@ -28,7 +28,7 @@ export function ContactForm() {
   });
 
   const inputStyle: React.CSSProperties = {
-    height: 44,
+    height: 46,
     border: "1px solid #DCD3C5",
     background: "#fff",
     borderRadius: 2,
@@ -41,8 +41,10 @@ export function ContactForm() {
   };
 
   const labelStyle: React.CSSProperties = {
-    fontSize: 13,
-    fontWeight: 600,
+    fontSize: 11,
+    fontWeight: 700,
+    textTransform: "uppercase",
+    letterSpacing: ".16em",
     color: "#2A211A",
     display: "block",
     marginBottom: 6,
@@ -135,19 +137,6 @@ export function ContactForm() {
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <label style={labelStyle} htmlFor="msg-subject">
-              Subject
-            </label>
-            <input
-              id="msg-subject"
-              name="subject"
-              required
-              placeholder="What's this about?"
-              style={inputStyle}
-            />
-          </div>
-
-          <div style={{ marginTop: 16 }}>
             <label style={labelStyle} htmlFor="msg-message">
               Message
             </label>
@@ -155,13 +144,13 @@ export function ContactForm() {
               id="msg-message"
               name="message"
               required
-              rows={6}
+              rows={5}
               placeholder="Tell us more..."
               style={{
                 ...inputStyle,
                 height: "auto",
                 padding: "12px 14px",
-                resize: "none",
+                resize: "vertical",
               }}
             />
           </div>
@@ -280,13 +269,13 @@ export function ContactForm() {
               id="rev-review"
               name="review"
               required
-              rows={6}
+              rows={5}
               placeholder="Share your experience..."
               style={{
                 ...inputStyle,
                 height: "auto",
                 padding: "12px 14px",
-                resize: "none",
+                resize: "vertical",
               }}
             />
           </div>

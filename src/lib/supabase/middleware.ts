@@ -28,12 +28,22 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect /admin routes
+  // Protect /admin routes — redirect to admin login
   if (request.nextUrl.pathname.startsWith("/admin")) {
     if (!user) {
       const url = request.nextUrl.clone();
       url.pathname = "/login";
       url.searchParams.set("redirectTo", request.nextUrl.pathname);
+      return NextResponse.redirect(url);
+    }
+  }
+
+  // Protect /account routes — redirect to home with auth prompt
+  if (request.nextUrl.pathname.startsWith("/account")) {
+    if (!user) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/";
+      url.searchParams.set("auth", "login");
       return NextResponse.redirect(url);
     }
   }

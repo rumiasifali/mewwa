@@ -22,7 +22,7 @@ export default async function ContactPage() {
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: ".45fr .55fr",
+          gridTemplateColumns: "1fr 1fr",
           gap: "1px",
           background: "#E7E1D7",
           borderRadius: 2,
@@ -41,7 +41,7 @@ export default async function ContactPage() {
               margin: 0,
             }}
           >
-            Get in touch
+            Talk to us
           </p>
 
           <h1
@@ -54,7 +54,16 @@ export default async function ContactPage() {
               marginTop: 16,
             }}
           >
-            WhatsApp is fastest.
+            WhatsApp is{" "}
+            <span
+              style={{
+                fontFamily: "'Instrument Serif', serif",
+                fontStyle: "italic",
+                fontWeight: 400,
+              }}
+            >
+              fastest.
+            </span>
           </h1>
 
           <p
@@ -93,7 +102,7 @@ export default async function ContactPage() {
             }}
           >
             <MessageCircle size={18} />
-            Chat on WhatsApp
+            {phone}
           </a>
 
           {/* Contact rows */}

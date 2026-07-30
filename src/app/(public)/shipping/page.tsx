@@ -35,10 +35,7 @@ const packingSteps = [
   },
 ];
 
-const headerCols = ["Zone", "Weight", "Rate", "ETA"];
-
-const headerCellStyle: React.CSSProperties = {
-  padding: "12px 16px",
+const kvLabelStyle: React.CSSProperties = {
   fontSize: 10,
   letterSpacing: ".14em",
   textTransform: "uppercase",
@@ -46,47 +43,67 @@ const headerCellStyle: React.CSSProperties = {
   color: "#7C7268",
 };
 
-const dataCellStyle: React.CSSProperties = {
-  padding: "14px 16px",
+const kvValueStyle: React.CSSProperties = {
   fontSize: 13.5,
   color: "#2A211A",
+  fontWeight: 600,
+  marginTop: 4,
 };
 
-function RateTable({
+function RateCards({
   rows,
 }: {
   rows: { zone: string; weight: string; rate: string; eta: string }[];
 }) {
   return (
-    <div style={{ marginTop: 20 }}>
-      {/* Header */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr 1fr",
-          background: "#F5F1EA",
-        }}
-      >
-        {headerCols.map((col) => (
-          <div key={col} style={headerCellStyle}>
-            {col}
-          </div>
-        ))}
-      </div>
-      {/* Rows */}
+    <div
+      style={{
+        marginTop: 20,
+        display: "grid",
+        gap: "1px",
+        background: "#E7E1D7",
+        borderRadius: 2,
+        overflow: "hidden",
+      }}
+    >
       {rows.map((row) => (
         <div
           key={row.zone}
           style={{
-            display: "grid",
-            gridTemplateColumns: "1fr 1fr 1fr 1fr",
-            borderBottom: "1px solid #F0EBE3",
+            background: "#fff",
+            padding: "16px 18px",
           }}
         >
-          <div style={{ ...dataCellStyle, fontWeight: 600 }}>{row.zone}</div>
-          <div style={dataCellStyle}>{row.weight}</div>
-          <div style={{ ...dataCellStyle, fontWeight: 600 }}>{row.rate}</div>
-          <div style={dataCellStyle}>{row.eta}</div>
+          <div
+            style={{
+              fontSize: 14,
+              fontWeight: 650,
+              color: "#1A1512",
+              marginBottom: 12,
+            }}
+          >
+            {row.zone}
+          </div>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 12,
+            }}
+          >
+            <div>
+              <div style={kvLabelStyle}>Weight</div>
+              <div style={kvValueStyle}>{row.weight}</div>
+            </div>
+            <div>
+              <div style={kvLabelStyle}>Rate</div>
+              <div style={kvValueStyle}>{row.rate}</div>
+            </div>
+            <div>
+              <div style={kvLabelStyle}>ETA</div>
+              <div style={kvValueStyle}>{row.eta}</div>
+            </div>
+          </div>
         </div>
       ))}
     </div>
@@ -108,7 +125,7 @@ export default function ShippingPage() {
             margin: 0,
           }}
         >
-          Delivery
+          Shipping
         </p>
         <h1
           style={{
@@ -120,7 +137,7 @@ export default function ShippingPage() {
             marginTop: 12,
           }}
         >
-          Shipping &amp; rates
+          Shipping &amp; delivery
         </h1>
         <p
           style={{
@@ -173,7 +190,7 @@ export default function ShippingPage() {
           >
             Pakistan
           </h3>
-          <RateTable rows={domesticRows} />
+          <RateCards rows={domesticRows} />
           <div
             style={{
               fontSize: 13,
@@ -212,7 +229,7 @@ export default function ShippingPage() {
           >
             Worldwide
           </h3>
-          <RateTable rows={internationalRows} />
+          <RateCards rows={internationalRows} />
           <div
             style={{
               fontSize: 13,
@@ -237,17 +254,19 @@ export default function ShippingPage() {
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
-            gap: "1px",
-            background: "#E7E1D7",
+            gap: 16,
             marginTop: 24,
-            borderRadius: 2,
-            overflow: "hidden",
           }}
         >
           {packingSteps.map((step) => (
             <div
               key={step.step}
-              style={{ background: "#FBF9F5", padding: 24 }}
+              style={{
+                background: "#FBF9F5",
+                border: "1px solid #E7E1D7",
+                borderRadius: 2,
+                padding: 24,
+              }}
             >
               <span
                 style={{
@@ -285,9 +304,9 @@ export default function ShippingPage() {
       </div>
 
       {/* ── FAQ accordion ── */}
-      <div style={{ marginTop: 64 }}>
+      <div style={{ marginTop: 64, paddingTop: 64, borderTop: "1px solid #E7E1D7" }}>
         <h2 style={{ fontSize: 28, fontWeight: 800, color: "#1A1512" }}>
-          Common questions
+          Frequently asked questions
         </h2>
         <ShippingFaq />
       </div>

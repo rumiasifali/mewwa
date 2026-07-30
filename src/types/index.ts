@@ -81,3 +81,24 @@ export interface Testimonial {
   created_at: string;
   updated_at: string;
 }
+
+// ── Search ──
+
+export type SearchResultType = "product" | "category" | "post";
+
+export interface SearchResult {
+  result_type: SearchResultType;
+  id: string;
+  title: string;
+  subtitle: string;
+  slug: string;
+  image_url: string | null;
+  url: string;
+  rank: number;
+}
+
+export interface SearchResponse {
+  results: SearchResult[];
+  recommendations: SearchResult[];
+  query: string;
+}

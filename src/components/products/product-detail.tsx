@@ -3,9 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { MapPin, Star, Shield, Check } from "lucide-react";
+import { MapPin, Star, Shield, Plus } from "lucide-react";
 import { formatPrice, getWhatsAppLink } from "@/lib/constants";
 import { motion, AnimatedSection } from "@/components/shared/motion";
+import { useAuth } from "@/contexts/auth-context";
+import { useCart } from "@/contexts/cart-context";
+import { toast } from "sonner";
 import type { Product } from "@/types";
 
 /* ───── mock data for sections not yet in the DB ───── */
@@ -59,7 +62,7 @@ const ASSURANCE_ITEMS = [
 
 /* ───── inline WhatsApp SVG ───── */
 
-function WhatsAppIcon({ size = 20 }: { size?: number }) {
+function WhatsAppIcon({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
   return (
     <svg
       width={size}
@@ -127,26 +130,26 @@ export function ProductDetail({
         style={{
           maxWidth: 1400,
           margin: "0 auto",
-          padding: "0 28px 22px",
+          padding: "26px 28px 0",
           fontSize: 11.5,
           color: "#7C7268",
           display: "flex",
           alignItems: "center",
-          gap: 6,
+          gap: 8,
         }}
       >
         <Link href="/" style={{ color: "#7C7268", textDecoration: "none" }}>
           Home
         </Link>
-        <span style={{ color: "#B0A69A" }}>/</span>
+        <span>/</span>
         <Link
           href="/products"
           style={{ color: "#7C7268", textDecoration: "none" }}
         >
           {categoryLabel}
         </Link>
-        <span style={{ color: "#B0A69A" }}>/</span>
-        <span style={{ color: "#4A4139" }}>{product.name}</span>
+        <span>/</span>
+        <span style={{ color: "#4A4139", fontWeight: 500 }}>{product.name}</span>
       </motion.nav>
 
       {/* ══════════ Two-Column Grid ══════════ */}
@@ -154,7 +157,7 @@ export function ProductDetail({
         style={{
           maxWidth: 1400,
           margin: "0 auto",
-          padding: "0 28px",
+          padding: "22px 28px 0",
           display: "grid",
           gridTemplateColumns: "1.15fr .85fr",
           gap: 52,
@@ -175,7 +178,6 @@ export function ProductDetail({
               aspectRatio: "1",
               overflow: "hidden",
               background: "#F0EBE3",
-              borderRadius: 2,
             }}
           >
             {displayedImage && (
@@ -196,7 +198,7 @@ export function ProductDetail({
                 top: 14,
                 left: 14,
                 display: "flex",
-                flexDirection: "column",
+                flexDirection: "row",
                 gap: 6,
               }}
             >
@@ -211,7 +213,6 @@ export function ProductDetail({
                     textTransform: "uppercase",
                     fontWeight: 700,
                     padding: "5px 9px",
-                    borderRadius: 2,
                     display: "inline-block",
                   }}
                 >
@@ -228,7 +229,6 @@ export function ProductDetail({
                     textTransform: "uppercase",
                     fontWeight: 700,
                     padding: "5px 9px",
-                    borderRadius: 2,
                     display: "inline-block",
                   }}
                 >
@@ -256,7 +256,6 @@ export function ProductDetail({
                     aspectRatio: "1",
                     overflow: "hidden",
                     background: "#F0EBE3",
-                    borderRadius: 2,
                     position: "relative",
                     cursor: "pointer",
                     border:
@@ -318,7 +317,7 @@ export function ProductDetail({
             </div>
 
             {/* Tab content */}
-            <div style={{ padding: "24px 0" }}>
+            <div style={{ padding: "28px 0 0" }}>
               {/* ── Nutrition ── */}
               {activeTab === "nutrition" && (
                 <div>
@@ -326,7 +325,7 @@ export function ProductDetail({
                     style={{
                       fontSize: 13,
                       color: "#7C7268",
-                      marginBottom: 18,
+                      marginBottom: 20,
                     }}
                   >
                     Per {product.nutrition?.serving_size || "30g"} serving
@@ -340,7 +339,6 @@ export function ProductDetail({
                       gap: 1,
                       background: "#E7E1D7",
                       border: "1px solid #E7E1D7",
-                      borderRadius: 2,
                     }}
                   >
                     {[
@@ -403,14 +401,13 @@ export function ProductDetail({
                   {/* Lab-tested info bar */}
                   <div
                     style={{
-                      marginTop: 18,
+                      marginTop: 16,
                       background: "#F5F1EA",
                       borderLeft: "2px solid #6E7F4E",
                       padding: "14px 16px",
                       display: "flex",
                       alignItems: "center",
                       gap: 10,
-                      borderRadius: 2,
                     }}
                   >
                     <Shield
@@ -419,13 +416,12 @@ export function ProductDetail({
                     />
                     <span
                       style={{
-                        fontSize: 12.5,
-                        color: "#4A4139",
+                        fontSize: 13,
+                        color: "#3A332C",
                         lineHeight: 1.5,
                       }}
                     >
-                      Lab-tested for purity and contaminants. Full report
-                      available on request.
+                      Aflatoxin and moisture tested — batch report available on request.
                     </span>
                   </div>
                 </div>
@@ -466,23 +462,25 @@ export function ProductDetail({
                         fontSize: 20,
                         fontWeight: 650,
                         color: "#1A1512",
-                        marginBottom: 10,
+                        letterSpacing: "-.025em",
+                        margin: 0,
                       }}
                     >
                       {product.origin}
                     </h3>
                     <p
                       style={{
-                        fontSize: 14,
+                        fontSize: 14.5,
                         lineHeight: 1.7,
                         color: "#4A4139",
-                        marginBottom: 20,
+                        margin: "12px 0 0",
                       }}
                     >
                       Sourced directly from trusted farmers in{" "}
                       {product.origin}. Each batch is hand-selected and
                       quality-checked before it reaches you.
                     </p>
+                    <div style={{ marginTop: 20 }}>
                     {[
                       { label: "Region", value: product.origin },
                       { label: "Altitude", value: "1,200 – 2,400m" },
@@ -501,12 +499,13 @@ export function ProductDetail({
                       >
                         <span style={{ color: "#7C7268" }}>{row.label}</span>
                         <span
-                          style={{ color: "#1A1512", fontWeight: 500 }}
+                          style={{ color: "#1A1512", fontWeight: 600 }}
                         >
                           {row.value}
                         </span>
                       </div>
                     ))}
+                    </div>
                   </div>
                 </div>
               )}
@@ -518,6 +517,7 @@ export function ProductDetail({
                     display: "flex",
                     flexDirection: "column",
                     gap: 14,
+                    maxWidth: 620,
                   }}
                 >
                   {STORAGE_TIPS.map((tip, i) => (
@@ -534,9 +534,9 @@ export function ProductDetail({
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          fontSize: 11,
-                          fontWeight: 600,
-                          color: "#7C7268",
+                          fontSize: 10.5,
+                          fontWeight: 700,
+                          color: "#4A4139",
                           flexShrink: 0,
                           marginTop: 1,
                         }}
@@ -545,7 +545,7 @@ export function ProductDetail({
                       </span>
                       <p
                         style={{
-                          fontSize: 14,
+                          fontSize: 14.5,
                           lineHeight: 1.65,
                           color: "#4A4139",
                           margin: 0,
@@ -567,7 +567,6 @@ export function ProductDetail({
                     gap: 1,
                     background: "#E7E1D7",
                     border: "1px solid #E7E1D7",
-                    borderRadius: 2,
                   }}
                   className="qaaq-shipping-grid"
                 >
@@ -595,7 +594,7 @@ export function ProductDetail({
                       <span
                         style={{
                           fontSize: 10.5,
-                          letterSpacing: ".16em",
+                          letterSpacing: ".18em",
                           textTransform: "uppercase",
                           fontWeight: 600,
                           color: "#C8922E",
@@ -608,7 +607,7 @@ export function ProductDetail({
                           fontSize: 17,
                           fontWeight: 650,
                           color: "#1A1512",
-                          margin: "6px 0 8px",
+                          margin: "12px 0 0",
                         }}
                       >
                         {card.title}
@@ -617,20 +616,21 @@ export function ProductDetail({
                         style={{
                           fontSize: 13.5,
                           lineHeight: 1.65,
-                          color: "#4A4139",
-                          margin: "0 0 14px",
+                          color: "#7C7268",
+                          margin: "8px 0 0",
                         }}
                       >
                         {card.body}
                       </p>
                       <span
                         style={{
-                          fontSize: 12,
+                          fontSize: 13,
                           fontWeight: 600,
-                          color: "#7C7268",
+                          marginTop: 14,
+                          display: "block",
                         }}
                       >
-                        ETA: {card.eta}
+                        {card.eta}
                       </span>
                     </div>
                   ))}
@@ -659,8 +659,7 @@ export function ProductDetail({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 6,
-              marginBottom: 12,
+              gap: 7,
             }}
           >
             <MapPin size={12} style={{ color: "#C8922E" }} />
@@ -685,7 +684,7 @@ export function ProductDetail({
               letterSpacing: "-.04em",
               fontWeight: 800,
               color: "#1A1512",
-              margin: 0,
+              margin: "12px 0 0",
             }}
           >
             {product.name}
@@ -696,11 +695,11 @@ export function ProductDetail({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 8,
+              gap: 12,
               marginTop: 14,
             }}
           >
-            <div style={{ display: "flex", gap: 2 }}>
+            <div style={{ display: "flex", gap: 3 }}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Star
                   key={n}
@@ -712,7 +711,7 @@ export function ProductDetail({
               ))}
             </div>
             <span style={{ fontSize: 13, color: "#4A4139" }}>
-              4.8 &middot; 24 verified reviews
+              <strong>4.8</strong> &middot; 24 verified reviews
             </span>
           </div>
 
@@ -750,9 +749,9 @@ export function ProductDetail({
                 <span
                   style={{
                     fontSize: 10.5,
-                    letterSpacing: ".16em",
+                    letterSpacing: ".2em",
                     textTransform: "uppercase",
-                    fontWeight: 600,
+                    fontWeight: 700,
                     color: "#1A1512",
                   }}
                 >
@@ -805,7 +804,7 @@ export function ProductDetail({
                         style={{
                           display: "flex",
                           alignItems: "center",
-                          gap: 12,
+                          gap: 11,
                         }}
                       >
                         {/* Radio dot */}
@@ -847,12 +846,11 @@ export function ProductDetail({
                             style={{
                               fontSize: 9.5,
                               fontWeight: 700,
-                              letterSpacing: ".12em",
+                              letterSpacing: ".13em",
                               textTransform: "uppercase",
-                              color: "#C8922E",
-                              background: "rgba(200,146,46,.1)",
-                              padding: "3px 7px",
-                              borderRadius: 2,
+                              color: "#6E7F4E",
+                              border: "1px solid #C3CBAE",
+                              padding: "2px 6px",
                             }}
                           >
                             Best value
@@ -869,7 +867,7 @@ export function ProductDetail({
                         >
                           {formatPrice(w.price)}
                         </div>
-                        <div style={{ fontSize: 11, color: "#7C7268" }}>
+                        <div style={{ fontSize: 11, color: "#7C7268", marginTop: 2 }}>
                           {formatPrice(Number(pkgPrice))}/kg
                         </div>
                       </div>
@@ -881,108 +879,7 @@ export function ProductDetail({
           )}
 
           {/* Order buttons */}
-          <div style={{ marginTop: 22 }}>
-            {/* WhatsApp CTA */}
-            <a
-              href={getWhatsAppLink(product, currentWeight?.label)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="qaaq-press"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: 10,
-                height: 56,
-                background: "#1FA855",
-                color: "#fff",
-                fontSize: 15.5,
-                fontWeight: 600,
-                borderRadius: 2,
-                textDecoration: "none",
-                width: "100%",
-                border: "none",
-                cursor: "pointer",
-                fontFamily: "var(--font-sans)",
-              }}
-            >
-              <WhatsAppIcon size={20} />
-              <span>
-                Order {currentWeight?.label} &mdash;{" "}
-                {currentWeight ? formatPrice(currentWeight.price) : ""}
-              </span>
-            </a>
-
-            {/* Secondary buttons */}
-            <div
-              style={{
-                display: "flex",
-                gap: 9,
-                marginTop: 10,
-              }}
-            >
-              <a
-                href={getWhatsAppLink(product)}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  flex: 1,
-                  height: 46,
-                  border: "1px solid #DCD3C5",
-                  fontSize: 13.5,
-                  fontWeight: 500,
-                  borderRadius: 2,
-                  background: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  textDecoration: "none",
-                  color: "#1A1512",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Ask a question
-              </a>
-              <a
-                href={getWhatsAppLink(product)}
-                target="_blank"
-                rel="noopener noreferrer"
-                style={{
-                  flex: 1,
-                  height: 46,
-                  border: "1px solid #DCD3C5",
-                  fontSize: 13.5,
-                  fontWeight: 500,
-                  borderRadius: 2,
-                  background: "#fff",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  cursor: "pointer",
-                  textDecoration: "none",
-                  color: "#1A1512",
-                  fontFamily: "var(--font-sans)",
-                }}
-              >
-                Request bulk price
-              </a>
-            </div>
-
-            {/* Phase note */}
-            <p
-              style={{
-                fontSize: 11.5,
-                color: "#9A9086",
-                textAlign: "center",
-                marginTop: 14,
-                marginBottom: 0,
-              }}
-            >
-              Card checkout arrives in phase two &mdash; for now, order via
-              WhatsApp or bank transfer.
-            </p>
-          </div>
+          <ProductOrderButtons product={product} currentWeight={currentWeight} />
 
           {/* Assurance list */}
           <div
@@ -990,7 +887,6 @@ export function ProductDetail({
               marginTop: 24,
               border: "1px solid #E7E1D7",
               background: "#fff",
-              borderRadius: 2,
             }}
           >
             {ASSURANCE_ITEMS.map((item, i) => (
@@ -1061,40 +957,34 @@ export function ProductDetail({
                   fontSize: 32,
                   fontWeight: 800,
                   color: "#1A1512",
-                  letterSpacing: "-.03em",
-                  margin: "0 0 20px",
+                  letterSpacing: "-.04em",
+                  margin: 0,
                 }}
               >
                 Reviews
               </h2>
               <div
                 style={{
-                  fontSize: 52,
-                  fontWeight: 800,
-                  color: "#1A1512",
-                  letterSpacing: "-.04em",
-                  lineHeight: 1,
-                }}
-              >
-                4.8
-              </div>
-              <div
-                style={{
                   display: "flex",
-                  gap: 2,
-                  marginTop: 6,
-                  marginBottom: 20,
+                  alignItems: "baseline",
+                  gap: 10,
+                  marginTop: 18,
                 }}
               >
-                {[1, 2, 3, 4, 5].map((n) => (
-                  <Star
-                    key={n}
-                    size={14}
-                    fill="#C8922E"
-                    stroke="#C8922E"
-                    strokeWidth={0}
-                  />
-                ))}
+                <span
+                  style={{
+                    fontSize: 52,
+                    fontWeight: 800,
+                    color: "#1A1512",
+                    letterSpacing: "-.04em",
+                    lineHeight: 1,
+                  }}
+                >
+                  4.8
+                </span>
+                <span style={{ fontSize: 14, color: "#7C7268" }}>
+                  / 5 &middot; 24 reviews
+                </span>
               </div>
 
               {/* Rating bars */}
@@ -1102,7 +992,7 @@ export function ProductDetail({
                 style={{
                   display: "flex",
                   flexDirection: "column",
-                  gap: 6,
+                  gap: 8,
                   marginBottom: 24,
                 }}
               >
@@ -1112,31 +1002,23 @@ export function ProductDetail({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
+                      gap: 10,
                     }}
                   >
                     <span
                       style={{
                         fontSize: 12,
                         color: "#7C7268",
-                        width: 16,
-                        textAlign: "right",
+                        width: 10,
                       }}
                     >
                       {5 - i}
                     </span>
-                    <Star
-                      size={10}
-                      fill="#C8922E"
-                      stroke="#C8922E"
-                      strokeWidth={0}
-                    />
                     <div
                       style={{
                         flex: 1,
-                        height: 6,
-                        background: "#F0EBE3",
-                        borderRadius: 1,
+                        height: 4,
+                        background: "#E7E1D7",
                         overflow: "hidden",
                       }}
                     >
@@ -1144,8 +1026,7 @@ export function ProductDetail({
                         style={{
                           width: `${pct}%`,
                           height: "100%",
-                          background: "#C8922E",
-                          borderRadius: 1,
+                          background: "#1A1512",
                         }}
                       />
                     </div>
@@ -1153,38 +1034,35 @@ export function ProductDetail({
                       style={{
                         fontSize: 11,
                         color: "#B0A69A",
-                        width: 28,
+                        width: 26,
+                        textAlign: "right",
                       }}
                     >
-                      {pct}%
+                      {Math.round((pct / 100) * 24)}
                     </span>
                   </div>
                 ))}
               </div>
 
-              <a
-                href={getWhatsAppLink(product)}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  height: 44,
-                  padding: "0 24px",
-                  border: "1px solid #DCD3C5",
+                  height: 42,
+                  padding: "0 20px",
+                  border: "1px solid #1A1512",
                   borderRadius: 2,
                   fontSize: 13,
                   fontWeight: 600,
                   color: "#1A1512",
                   background: "#fff",
                   cursor: "pointer",
-                  textDecoration: "none",
                   fontFamily: "var(--font-sans)",
                 }}
               >
                 Write a review
-              </a>
+              </button>
             </div>
 
             {/* Right — review cards */}
@@ -1195,7 +1073,6 @@ export function ProductDetail({
                 gap: 1,
                 background: "#E7E1D7",
                 border: "1px solid #E7E1D7",
-                borderRadius: 2,
               }}
               className="qaaq-review-cards-grid"
             >
@@ -1210,51 +1087,49 @@ export function ProductDetail({
                   <div
                     style={{
                       display: "flex",
-                      gap: 2,
-                      marginBottom: 8,
+                      alignItems: "center",
+                      gap: 4,
                     }}
                   >
                     {[1, 2, 3, 4, 5].map((n) => (
                       <Star
                         key={n}
-                        size={11}
+                        size={12}
                         fill={n <= review.rating ? "#C8922E" : "#E7E1D7"}
                         stroke={n <= review.rating ? "#C8922E" : "#E7E1D7"}
                         strokeWidth={0}
                       />
                     ))}
+                    <span
+                      style={{
+                        marginLeft: 8,
+                        fontSize: 10,
+                        fontWeight: 700,
+                        letterSpacing: ".14em",
+                        textTransform: "uppercase",
+                        color: "#6E7F4E",
+                      }}
+                    >
+                      Verified order
+                    </span>
                   </div>
-                  <span
-                    style={{
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      fontSize: 10,
-                      fontWeight: 600,
-                      letterSpacing: ".12em",
-                      textTransform: "uppercase",
-                      color: "#4E7A3E",
-                      marginBottom: 10,
-                    }}
-                  >
-                    <Check size={10} />
-                    Verified order
-                  </span>
                   <p
                     style={{
-                      fontSize: 14,
+                      fontSize: 14.5,
                       lineHeight: 1.65,
-                      color: "#4A4139",
-                      margin: "0 0 14px",
+                      color: "#2E2721",
+                      margin: "14px 0 0",
                     }}
                   >
                     {review.text}
                   </p>
-                  <div style={{ fontSize: 12.5, color: "#7C7268" }}>
-                    <span style={{ fontWeight: 600, color: "#1A1512" }}>
-                      {review.name}
-                    </span>{" "}
-                    &middot; {review.city}
+                  <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#1A1512" }}>
+                      {review.name}{" "}
+                      <span style={{ color: "#9A9086", fontWeight: 400 }}>
+                        &middot; {review.city}
+                      </span>
+                    </span>
                   </div>
                 </div>
               ))}
@@ -1277,8 +1152,9 @@ export function ProductDetail({
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "baseline",
-                marginBottom: 24,
+                alignItems: "flex-end",
+                paddingBottom: 18,
+                borderBottom: "1px solid #1A1512",
               }}
             >
               <h2
@@ -1296,12 +1172,14 @@ export function ProductDetail({
                 href="/products"
                 style={{
                   fontSize: 13,
-                  color: "#7C7268",
+                  color: "#1A1512",
                   textDecoration: "none",
-                  fontWeight: 500,
+                  fontWeight: 600,
+                  borderBottom: "1px solid #C8922E",
+                  paddingBottom: 2,
                 }}
               >
-                All products &rarr;
+                All products
               </Link>
             </div>
 
@@ -1311,7 +1189,7 @@ export function ProductDetail({
                 gridTemplateColumns: "repeat(4, 1fr)",
                 gap: 1,
                 background: "#E7E1D7",
-                borderRadius: 2,
+                borderTop: "1px solid #E7E1D7",
               }}
               className="qaaq-related-grid"
             >
@@ -1321,7 +1199,7 @@ export function ProductDetail({
                   href={`/products/${p.slug}`}
                   style={{
                     background: "#FBF9F5",
-                    padding: 14,
+                    padding: "14px 14px 16px",
                     textDecoration: "none",
                     display: "block",
                   }}
@@ -1332,8 +1210,6 @@ export function ProductDetail({
                       aspectRatio: "1",
                       overflow: "hidden",
                       background: "#F0EBE3",
-                      borderRadius: 2,
-                      marginBottom: 14,
                     }}
                   >
                     {p.image_url && (
@@ -1348,22 +1224,23 @@ export function ProductDetail({
                   </div>
                   <div
                     style={{
-                      fontSize: 10.5,
+                      fontSize: 10,
                       letterSpacing: ".14em",
                       textTransform: "uppercase",
                       color: "#7C7268",
                       fontWeight: 600,
-                      marginBottom: 4,
+                      marginTop: 12,
                     }}
                   >
                     {p.origin}
                   </div>
                   <div
                     style={{
-                      fontSize: 15,
+                      fontSize: 16,
                       fontWeight: 650,
                       color: "#1A1512",
-                      marginBottom: 6,
+                      letterSpacing: "-.02em",
+                      margin: "6px 0 0",
                     }}
                   >
                     {p.name}
@@ -1371,18 +1248,19 @@ export function ProductDetail({
                   {p.weights.length > 0 && (
                     <div
                       style={{
-                        fontSize: 14,
+                        fontSize: 14.5,
                         fontWeight: 700,
                         color: "#1A1512",
+                        marginTop: 10,
                       }}
                     >
                       {formatPrice(p.weights[0].price)}
                       <span
                         style={{
-                          fontSize: 11.5,
+                          fontSize: 11,
                           fontWeight: 400,
                           color: "#7C7268",
-                          marginLeft: 4,
+                          marginLeft: 3,
                         }}
                       >
                         / {p.weights[0].label}
@@ -1430,6 +1308,165 @@ export function ProductDetail({
           `,
         }}
       />
+    </div>
+  );
+}
+
+/* ── Add to Cart + WhatsApp buttons ── */
+function ProductOrderButtons({
+  product,
+  currentWeight,
+}: {
+  product: Product;
+  currentWeight: Product["weights"][0] | undefined;
+}) {
+  const { user, openAuthModal } = useAuth();
+  const { addItem, openCart } = useCart();
+
+  const handleAddToCart = () => {
+    if (!user) {
+      openAuthModal("login");
+      return;
+    }
+    if (!currentWeight) return;
+
+    addItem({
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+      imageUrl: product.image_url,
+      origin: product.origin,
+      weightGrams: currentWeight.grams,
+      weightLabel: currentWeight.label,
+      price: currentWeight.price,
+      currency: currentWeight.currency || "PKR",
+    });
+
+    toast("Added to your order", {
+      description: `${product.name} — ${currentWeight.label}`,
+      action: {
+        label: "View cart",
+        onClick: () => openCart(),
+      },
+      duration: 3000,
+    });
+  };
+
+  return (
+    <div style={{ marginTop: 22, display: "flex", flexDirection: "column", gap: 9 }}>
+      {/* Primary: Add to Cart */}
+      <button
+        onClick={handleAddToCart}
+        className="qaaq-press"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 9,
+          height: 56,
+          background: "#1A1512",
+          color: "#fff",
+          fontSize: 15.5,
+          fontWeight: 600,
+          borderRadius: 2,
+          border: "none",
+          cursor: "pointer",
+          fontFamily: "inherit",
+          width: "100%",
+        }}
+      >
+        <Plus style={{ width: 16, height: 16 }} />
+        Add to Cart &mdash;{" "}
+        {currentWeight ? formatPrice(currentWeight.price) : ""}
+      </button>
+
+      {/* Secondary: WhatsApp */}
+      <a
+        href={getWhatsAppLink(product, currentWeight?.label)}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="qaaq-press"
+        style={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 10,
+          height: 52,
+          border: "1px solid #1FA855",
+          background: "#fff",
+          color: "#128C4A",
+          fontSize: 14.5,
+          fontWeight: 600,
+          borderRadius: 2,
+          textDecoration: "none",
+          width: "100%",
+        }}
+      >
+        <WhatsAppIcon size={17} />
+        Order {currentWeight?.label} &mdash;{" "}
+        {currentWeight ? formatPrice(currentWeight.price) : ""}
+      </a>
+
+      {/* Tertiary buttons */}
+      <div style={{ display: "flex", gap: 9 }}>
+        <a
+          href={getWhatsAppLink(product)}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1,
+            height: 46,
+            border: "1px solid #DCD3C5",
+            fontSize: 13.5,
+            fontWeight: 500,
+            borderRadius: 2,
+            background: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            textDecoration: "none",
+            color: "#1A1512",
+          }}
+        >
+          Ask a question
+        </a>
+        <a
+          href={getWhatsAppLink(product)}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            flex: 1,
+            height: 46,
+            border: "1px solid #DCD3C5",
+            fontSize: 13.5,
+            fontWeight: 500,
+            borderRadius: 2,
+            background: "#fff",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            cursor: "pointer",
+            textDecoration: "none",
+            color: "#1A1512",
+          }}
+        >
+          Request bulk price
+        </a>
+      </div>
+
+      <p
+        style={{
+          fontSize: 11.5,
+          color: "#9A9086",
+          textAlign: "center",
+          marginTop: 4,
+          marginBottom: 0,
+        }}
+      >
+        Card checkout arrives in phase two. Today we confirm every order by
+        message first.
+      </p>
     </div>
   );
 }

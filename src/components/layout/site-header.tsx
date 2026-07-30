@@ -1,9 +1,13 @@
 "use client";
 
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Search, ShoppingBag } from "lucide-react";
+import { LogOut, User, ClipboardList } from "lucide-react";
 import { getWhatsAppLink } from "@/lib/constants";
+import { SiteSearch } from "@/components/search/site-search";
+import { useAuth } from "@/contexts/auth-context";
+import { useCart } from "@/contexts/cart-context";
 
 const NAV_ITEMS = [
   { label: "Shop All", href: "/products" },
@@ -17,6 +21,43 @@ const NAV_ITEMS = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const { user, profile, loading, openAuthModal, signOut } = useAuth();
+  const { itemCount, openCart } = useCart();
+  const [acctMenu, setAcctMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close account menu on outside click
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setAcctMenu(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  // Close account menu on route change
+  useEffect(() => {
+    setAcctMenu(false);
+  }, [pathname]);
+
+  const initials = profile?.full_name
+    ? profile.full_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : user?.email?.[0]?.toUpperCase() ?? "?";
+
+  const handleBagClick = () => {
+    if (!user) {
+      openAuthModal("login");
+    } else {
+      openCart();
+    }
+  };
 
   return (
     <header
@@ -108,49 +149,13 @@ export function SiteHeader() {
 
         {/* Right actions */}
         <div className="flex items-center" style={{ gap: 12 }}>
-          {/* Search box */}
-          <div
-            className="hidden md:flex items-center"
-            style={{
-              height: 38,
-              border: "1px solid #E7E1D7",
-              background: "#FFFFFF",
-              borderRadius: 3,
-              padding: "0 12px",
-              gap: 8,
-            }}
-          >
-            <Search
-              style={{ width: 15, height: 15, color: "#7C7268", flexShrink: 0 }}
-            />
-            <span
-              style={{
-                fontSize: "12.5px",
-                color: "#B0A69A",
-                whiteSpace: "nowrap",
-              }}
-            >
-              Search 12 products...
-            </span>
-            <kbd
-              style={{
-                fontSize: 10,
-                color: "#B0A69A",
-                border: "1px solid #E7E1D7",
-                borderRadius: 2,
-                padding: "1px 5px",
-                marginLeft: 8,
-                lineHeight: "16px",
-                fontFamily: "inherit",
-              }}
-            >
-              ⌘K
-            </kbd>
-          </div>
+          {/* Search */}
+          <SiteSearch />
 
           {/* Bag button */}
           <button
             type="button"
+            onClick={handleBagClick}
             className="relative flex items-center justify-center"
             style={{
               width: 38,
@@ -158,27 +163,230 @@ export function SiteHeader() {
               border: "1px solid #E7E1D7",
               borderRadius: 3,
               background: "#FFFFFF",
+              cursor: "pointer",
             }}
           >
-            <ShoppingBag style={{ width: 17, height: 17, color: "#1A1512" }} />
-            <span
-              className="absolute flex items-center justify-center"
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1A1512"
+              strokeWidth="1.8"
+            >
+              <path d="M6 8h12l-1 12H7L6 8z" />
+              <path d="M9.5 8V6a2.5 2.5 0 0 1 5 0v2" />
+            </svg>
+            {user && itemCount > 0 && (
+              <span
+                className="absolute flex items-center justify-center"
+                style={{
+                  top: -6,
+                  right: -6,
+                  minWidth: 17,
+                  height: 17,
+                  padding: "0 4px",
+                  borderRadius: 9,
+                  background: "#C8922E",
+                  color: "#1A1512",
+                  fontSize: 10,
+                  fontWeight: 800,
+                }}
+              >
+                {itemCount}
+              </span>
+            )}
+          </button>
+
+          {/* Auth state: Signed In → Avatar dropdown */}
+          {!loading && user && (
+            <div ref={menuRef} style={{ position: "relative" }}>
+              <button
+                onClick={() => setAcctMenu(!acctMenu)}
+                style={{
+                  width: 38,
+                  height: 38,
+                  flexShrink: 0,
+                  borderRadius: "50%",
+                  background: "#1A1512",
+                  color: "#fff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: 12.5,
+                  fontWeight: 700,
+                  letterSpacing: ".02em",
+                  border: "none",
+                  cursor: "pointer",
+                }}
+              >
+                {initials}
+              </button>
+
+              {acctMenu && (
+                <div
+                  role="menu"
+                  style={{
+                    position: "absolute",
+                    top: 46,
+                    right: 0,
+                    minWidth: 196,
+                    background: "#FBF9F5",
+                    border: "1px solid #DCD3C5",
+                    boxShadow:
+                      "0 24px 50px -22px rgba(26,21,18,.4)",
+                    display: "flex",
+                    flexDirection: "column",
+                    padding: "6px 0",
+                    animation: "qaaq-rise .18s both",
+                    zIndex: 90,
+                  }}
+                >
+                  {/* Name + email header */}
+                  <div
+                    style={{
+                      padding: "8px 16px 10px",
+                      borderBottom: "1px solid #E7E1D7",
+                      marginBottom: 4,
+                    }}
+                  >
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: 13,
+                        fontWeight: 650,
+                        color: "#1A1512",
+                      }}
+                    >
+                      {profile?.full_name || "Account"}
+                    </span>
+                    <span
+                      style={{
+                        display: "block",
+                        fontSize: 11,
+                        color: "#9A9086",
+                        marginTop: 2,
+                      }}
+                    >
+                      {user.email}
+                    </span>
+                  </div>
+
+                  {/* Menu items */}
+                  <Link
+                    href="/account"
+                    role="menuitem"
+                    onClick={() => setAcctMenu(false)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      padding: "9px 16px",
+                      fontSize: 13.5,
+                      fontWeight: 500,
+                      color: "#1A1512",
+                      textDecoration: "none",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background =
+                        "#F0EBE3";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background =
+                        "transparent";
+                    }}
+                  >
+                    <User style={{ width: 14, height: 14, color: "#7C7268" }} />
+                    My Account
+                  </Link>
+                  <Link
+                    href="/account/orders"
+                    role="menuitem"
+                    onClick={() => setAcctMenu(false)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      padding: "9px 16px",
+                      fontSize: 13.5,
+                      fontWeight: 500,
+                      color: "#1A1512",
+                      textDecoration: "none",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background =
+                        "#F0EBE3";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background =
+                        "transparent";
+                    }}
+                  >
+                    <ClipboardList
+                      style={{ width: 14, height: 14, color: "#7C7268" }}
+                    />
+                    Order History
+                  </Link>
+                  <button
+                    role="menuitem"
+                    onClick={async () => {
+                      setAcctMenu(false);
+                      await signOut();
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 9,
+                      padding: "9px 16px",
+                      fontSize: 13.5,
+                      fontWeight: 500,
+                      color: "#B4551F",
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      fontFamily: "inherit",
+                      width: "100%",
+                      textAlign: "left",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background =
+                        "#F0EBE3";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background =
+                        "transparent";
+                    }}
+                  >
+                    <LogOut
+                      style={{ width: 14, height: 14, color: "#B4551F" }}
+                    />
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Auth state: Signed Out → Sign In link */}
+          {!loading && !user && (
+            <button
+              onClick={() => openAuthModal("login")}
+              className="qaaq-und hidden sm:block"
               style={{
-                top: -5,
-                right: -5,
-                width: 16,
-                height: 16,
-                borderRadius: "50%",
-                background: "#C8922E",
-                color: "#FFFFFF",
-                fontSize: 9,
-                fontWeight: 700,
-                lineHeight: 1,
+                flexShrink: 0,
+                fontSize: "13.5px",
+                fontWeight: 500,
+                color: "#1A1512",
+                padding: "0 2px",
+                background: "none",
+                border: "none",
+                cursor: "pointer",
+                fontFamily: "inherit",
               }}
             >
-              0
-            </span>
-          </button>
+              Sign In
+            </button>
+          )}
 
           {/* WhatsApp CTA */}
           <a
@@ -192,9 +400,10 @@ export function SiteHeader() {
               color: "#FFFFFF",
               borderRadius: 3,
               padding: "0 16px",
-              gap: 7,
-              fontSize: "12.5px",
+              gap: 8,
+              fontSize: "13px",
               fontWeight: 600,
+              letterSpacing: ".01em",
               whiteSpace: "nowrap",
             }}
           >
