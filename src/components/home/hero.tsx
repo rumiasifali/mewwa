@@ -21,13 +21,18 @@ const fadeInItem = (delay: number) => ({
 });
 
 const STATS = [
-  { value: "12+", label: "Products" },
-  { value: "5", label: "Valleys" },
-  { value: "48h", label: "Pack to ship" },
-  { value: "4.8\u2605", label: "Rating" },
+  { value: "6,400+", label: "Orders packed" },
+  { value: "3 yrs", label: "Direct sourcing" },
+  { value: "100%", label: "Lab-tested" },
+  { value: "48 hrs", label: "Farm to pack" },
 ];
 
-export function Hero() {
+import type { Product } from "@/types";
+import { formatPrice } from "@/lib/constants";
+
+export function Hero({ todaysPick }: { todaysPick?: Product | null }) {
+  const pick = todaysPick;
+  const pickWeight = pick?.weights?.[0];
   return (
     <section
       className="relative flex items-center overflow-hidden"
@@ -261,116 +266,132 @@ export function Hero() {
       </div>
 
       {/* Today's pick floating card — hidden below 1200px */}
-      <style>{`.hero-pick{display:none}@media(min-width:1200px){.hero-pick{display:block}}`}</style>
-      <motion.div
-        className="hero-pick absolute"
-        style={{
-          right: 28,
-          bottom: 34,
-          width: 262,
-          backgroundColor: "rgba(251,249,245,.96)",
-          backdropFilter: "blur(14px)",
-          WebkitBackdropFilter: "blur(14px)",
-          borderRadius: 4,
-          padding: 16,
-          boxShadow: "0 24px 60px -20px rgba(0,0,0,.5)",
-        }}
-        {...fadeUpItem(1.1)}
-      >
-        <div className="flex items-start" style={{ gap: 12 }}>
-          {/* Product thumbnail placeholder */}
-          <div
-            className="flex-shrink-0"
+      {pick && pickWeight && (
+        <>
+          <style>{`.hero-pick{display:none}@media(min-width:1200px){.hero-pick{display:block}}`}</style>
+          <motion.div
+            className="hero-pick absolute"
             style={{
-              width: 56,
-              height: 56,
-              backgroundColor: "#EDE7DC",
-              border: "1px solid #E0D8CA",
-              borderRadius: 3,
+              right: 28,
+              bottom: 34,
+              width: 262,
+              zIndex: 3,
+              backgroundColor: "rgba(251,249,245,.96)",
+              backdropFilter: "blur(14px)",
+              WebkitBackdropFilter: "blur(14px)",
+              borderRadius: 4,
+              padding: 16,
+              boxShadow: "0 24px 60px -20px rgba(0,0,0,.5)",
             }}
-          />
-          <div className="flex-1 min-w-0">
-            <div
-              style={{
-                fontSize: 9.5,
-                letterSpacing: ".2em",
-                textTransform: "uppercase",
-                color: "#C8922E",
-                fontWeight: 700,
-              }}
-            >
-              Today&apos;s pick
-            </div>
-            <div
-              style={{
-                fontSize: 13.5,
-                fontWeight: 600,
-                letterSpacing: "-.01em",
-                color: "#1A1512",
-                marginTop: 3,
-              }}
-            >
-              Mamra Almonds
-            </div>
-            <div
-              style={{
-                fontSize: 11.5,
-                color: "#7C7268",
-                marginTop: 1,
-              }}
-            >
-              Kandahar &middot; Grade A
-            </div>
-          </div>
-        </div>
-
-        {/* Divider + price row */}
-        <div
-          style={{
-            borderTop: "1px solid #E7E1D7",
-            marginTop: 13,
-            paddingTop: 12,
-            display: "flex",
-            alignItems: "baseline",
-            justifyContent: "space-between",
-          }}
-        >
-          <div>
-            <span
-              style={{
-                fontSize: 17,
-                fontWeight: 700,
-                color: "#1A1512",
-              }}
-            >
-              PKR 4,250
-            </span>
-            <span
-              style={{
-                fontSize: 11.5,
-                color: "#7C7268",
-                marginLeft: 3,
-              }}
-            >
-              / 250g
-            </span>
-          </div>
-          <Link
-            href="/products"
-            style={{
-              fontSize: 11.5,
-              fontWeight: 600,
-              color: "#1A1512",
-              borderBottom: "1px solid #C8922E",
-              textDecoration: "none",
-              lineHeight: 1,
-              paddingBottom: 1,
-            }}
+            {...fadeUpItem(1.1)}
           >
-            View
-          </Link>
-        </div>
-      </motion.div>
+            <div className="flex items-start" style={{ gap: 12 }}>
+              {pick.image_url ? (
+                <Image
+                  src={pick.image_url}
+                  alt={pick.name}
+                  width={56}
+                  height={56}
+                  className="flex-shrink-0 object-cover"
+                  style={{ borderRadius: 3 }}
+                />
+              ) : (
+                <div
+                  className="flex-shrink-0"
+                  style={{
+                    width: 56,
+                    height: 56,
+                    backgroundColor: "#EDE7DC",
+                    border: "1px solid #E0D8CA",
+                    borderRadius: 3,
+                  }}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <div
+                  style={{
+                    fontSize: 9.5,
+                    letterSpacing: ".2em",
+                    textTransform: "uppercase",
+                    color: "#C8922E",
+                    fontWeight: 700,
+                  }}
+                >
+                  Today&apos;s pick
+                </div>
+                <div
+                  style={{
+                    fontSize: 13.5,
+                    fontWeight: 600,
+                    letterSpacing: "-.01em",
+                    color: "#1A1512",
+                    marginTop: 3,
+                  }}
+                >
+                  {pick.name}
+                </div>
+                <div
+                  style={{
+                    fontSize: 11.5,
+                    color: "#7C7268",
+                    marginTop: 2,
+                  }}
+                >
+                  {pick.origin}
+                  {pick.tags?.[0] && <> &middot; {pick.tags[0]}</>}
+                </div>
+              </div>
+            </div>
+
+            {/* Divider + price row */}
+            <div
+              style={{
+                borderTop: "1px solid #E7E1D7",
+                marginTop: 13,
+                paddingTop: 12,
+                display: "flex",
+                alignItems: "baseline",
+                justifyContent: "space-between",
+              }}
+            >
+              <div>
+                <span
+                  style={{
+                    fontSize: 17,
+                    fontWeight: 700,
+                    color: "#1A1512",
+                  }}
+                >
+                  {formatPrice(pickWeight.price)}
+                </span>
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    color: "#7C7268",
+                    marginLeft: 3,
+                  }}
+                >
+                  / {pickWeight.label}
+                </span>
+              </div>
+              <Link
+                href={`/products/${pick.slug}`}
+                style={{
+                  fontSize: 11.5,
+                  fontWeight: 600,
+                  color: "#1A1512",
+                  borderBottom: "1px solid #C8922E",
+                  textDecoration: "none",
+                  lineHeight: 1,
+                  paddingBottom: 1,
+                }}
+              >
+                View
+              </Link>
+            </div>
+          </motion.div>
+        </>
+      )}
     </section>
   );
 }

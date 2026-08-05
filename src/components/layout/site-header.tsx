@@ -14,9 +14,9 @@ const NAV_ITEMS = [
   { label: "Nuts", href: "/products?category=nuts" },
   { label: "Dried Fruits", href: "/products?category=dried-fruits" },
   { label: "Seeds", href: "/products?category=seeds" },
-  { label: "Gift Boxes", href: "/products?category=gift-boxes" },
+  { label: "Gift Boxes", href: "/products?category=gift-boxes", gold: true },
+  { label: "Origins", href: "/about" },
   { label: "Journal", href: "/blog" },
-  { label: "About", href: "/about" },
 ];
 
 export function SiteHeader() {
@@ -24,22 +24,28 @@ export function SiteHeader() {
   const { user, profile, loading, openAuthModal, signOut } = useAuth();
   const { itemCount, openCart } = useCart();
   const [acctMenu, setAcctMenu] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
-  // Close account menu on outside click
+  // Close dropdowns on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
         setAcctMenu(false);
+      }
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  // Close account menu on route change
+  // Close dropdowns on route change
   useEffect(() => {
     setAcctMenu(false);
+    setMoreOpen(false);
   }, [pathname]);
 
   const initials = profile?.full_name
@@ -109,13 +115,18 @@ export function SiteHeader() {
         {/* Center nav */}
         <nav
           className="hidden lg:flex items-center"
-          style={{ gap: 26 }}
+          style={{
+            gap: 26,
+            fontSize: 13.5,
+            fontWeight: 500,
+            whiteSpace: "nowrap",
+            minWidth: 0,
+          }}
         >
           {NAV_ITEMS.map((item) => {
             const isActive =
               item.href === pathname ||
-              (item.href.startsWith("/products?") &&
-                pathname === "/products") ||
+              (item.href.startsWith("/products?") && pathname === "/products") ||
               (item.href === "/products" && pathname === "/products");
 
             return (
@@ -124,24 +135,107 @@ export function SiteHeader() {
                 href={item.href}
                 className="qaaq-und"
                 style={{
-                  fontSize: "13.5px",
-                  fontWeight: 500,
-                  color: isActive ? "#1A1512" : "#7C7268",
+                  cursor: "pointer",
+                  color: item.gold ? "#C8922E" : isActive ? "#1A1512" : "#7C7268",
+                  textDecoration: "none",
                   transition: "color .2s",
                 }}
                 onMouseEnter={(e) => {
-                  (e.currentTarget as HTMLElement).style.color = "#1A1512";
+                  if (!item.gold) (e.currentTarget as HTMLElement).style.color = "#1A1512";
                 }}
                 onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLElement).style.color = isActive
-                    ? "#1A1512"
-                    : "#7C7268";
+                  if (!item.gold) {
+                    (e.currentTarget as HTMLElement).style.color = isActive ? "#1A1512" : "#7C7268";
+                  }
                 }}
               >
                 {item.label}
               </Link>
             );
           })}
+
+          {/* More dropdown — for overflow items */}
+          <div ref={moreRef} style={{ position: "relative" }}>
+            <span
+              onClick={() => setMoreOpen(!moreOpen)}
+              style={{
+                cursor: "pointer",
+                display: "flex",
+                alignItems: "center",
+                gap: 5,
+                color: "#7C7268",
+              }}
+            >
+              More
+              <svg
+                width="11"
+                height="11"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.4"
+                style={{
+                  transform: moreOpen ? "rotate(180deg)" : "rotate(0deg)",
+                  transition: "transform .25s cubic-bezier(.22,1,.36,1)",
+                }}
+              >
+                <path d="m6 9 6 6 6-6" />
+              </svg>
+            </span>
+
+            {moreOpen && (
+              <div
+                role="menu"
+                style={{
+                  position: "absolute",
+                  top: 32,
+                  left: -14,
+                  minWidth: 212,
+                  background: "#FBF9F5",
+                  border: "1px solid #DCD3C5",
+                  boxShadow: "0 24px 50px -22px rgba(26,21,18,.4)",
+                  display: "flex",
+                  flexDirection: "column",
+                  padding: "6px 0",
+                  animation: "qaaq-rise .18s both",
+                  zIndex: 90,
+                }}
+              >
+                {[
+                  { label: "About", href: "/about" },
+                  { label: "Shipping", href: "/shipping" },
+                  { label: "Contact", href: "/contact" },
+                  { label: "Feedback", href: "/feedback" },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    role="menuitem"
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      gap: 14,
+                      padding: "9px 16px",
+                      fontSize: 13.5,
+                      fontWeight: 500,
+                      color: pathname === item.href ? "#1A1512" : "#7C7268",
+                      textDecoration: "none",
+                      transition: "background .15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = "#F0EBE3";
+                    }}
+                    onMouseLeave={(e) => {
+                      (e.currentTarget as HTMLElement).style.background = "transparent";
+                    }}
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            )}
+          </div>
         </nav>
 
         {/* Spacer */}
@@ -164,6 +258,13 @@ export function SiteHeader() {
               borderRadius: 3,
               background: "#FFFFFF",
               cursor: "pointer",
+              transition: "border-color .2s",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = "#1A1512";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.borderColor = "#E7E1D7";
             }}
           >
             <svg
@@ -401,10 +502,12 @@ export function SiteHeader() {
               borderRadius: 3,
               padding: "0 16px",
               gap: 8,
-              fontSize: "13px",
+              fontSize: 13,
               fontWeight: 600,
               letterSpacing: ".01em",
               whiteSpace: "nowrap",
+              flexShrink: 0,
+              textDecoration: "none",
             }}
           >
             <svg

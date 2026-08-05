@@ -5,24 +5,24 @@ import { Check } from "lucide-react";
 
 const proofItems = [
   {
-    tag: "Single-origin",
-    title: "Every bag traces to one valley",
-    body: "No blending from wholesale markets. We name the grower and the season on every label.",
-  },
-  {
     tag: "Lab-tested",
-    title: "Aflatoxin & heavy-metal clear",
-    body: "Third-party lab reports available for every batch we pack. Ask and we'll share.",
+    title: "Aflatoxin & moisture report",
+    body: "Every batch is tested before it's split into pouches. Ask for the report and we'll send it.",
   },
   {
-    tag: "Packed fresh",
-    title: "Weighed after you order",
-    body: "Nothing sits in a warehouse. Your bag is sealed the same day your order comes in.",
+    tag: "Packed to order",
+    title: "Sealed the day it ships",
+    body: "Nothing is pre-bagged. Your weight is measured, vacuum-sealed and dated after you confirm.",
   },
   {
-    tag: "Direct pricing",
-    title: "Grower to you, one step",
-    body: "We buy at harvest and store in cold rooms. No broker chain inflating the price.",
+    tag: "Direct sourcing",
+    title: "Three seasons, same growers",
+    body: "No wholesale market in between. We name the valley because we were standing in it.",
+  },
+  {
+    tag: "6,400 orders",
+    title: "4.8 average, 621 reviews",
+    body: "Reviews are tied to real order numbers. We publish the bad ones too.",
   },
 ];
 

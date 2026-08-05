@@ -7,20 +7,22 @@ import { StorySection } from "@/components/home/story-section";
 import { PackedToOrder } from "@/components/home/packed-to-order";
 import { Testimonials } from "@/components/home/testimonials";
 import { CTASection } from "@/components/home/cta-section";
-import { getFeaturedProducts, getCategories, getApprovedTestimonials } from "@/lib/data";
+import { JournalSection } from "@/components/home/journal-section";
+import { getFeaturedProducts, getCategories, getApprovedTestimonials, getPosts } from "@/lib/data";
 
 export const revalidate = 60;
 
 export default async function Home() {
-  const [products, categories, testimonials] = await Promise.all([
+  const [products, categories, testimonials, posts] = await Promise.all([
     getFeaturedProducts(),
     getCategories(),
     getApprovedTestimonials(6),
+    getPosts(),
   ]);
 
   return (
     <>
-      <Hero />
+      <Hero todaysPick={products[0] || null} />
       <OriginTicker />
       <FeaturedProducts products={products} />
       <CategoriesSection categories={categories} />
@@ -28,6 +30,7 @@ export default async function Home() {
       <StorySection />
       <PackedToOrder />
       <Testimonials testimonials={testimonials} />
+      <JournalSection posts={posts.slice(0, 3)} />
       <CTASection />
     </>
   );

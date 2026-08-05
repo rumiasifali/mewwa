@@ -3,26 +3,29 @@ import { SITE_CONFIG } from "@/lib/constants";
 
 const footerLinks = {
   shop: [
-    { label: "All Products", href: "/products" },
+    { label: "All products", href: "/products" },
     { label: "Nuts", href: "/products?category=nuts" },
-    { label: "Dried Fruits", href: "/products?category=dried-fruits" },
+    { label: "Dried fruits", href: "/products?category=dried-fruits" },
     { label: "Seeds", href: "/products?category=seeds" },
+    { label: "Gift boxes", href: "/products?category=gift-boxes" },
   ],
   company: [
-    { label: "About / Origins", href: "/about" },
+    { label: "Origins", href: "/about" },
     { label: "Journal", href: "/blog" },
-    { label: "Shipping & Rates", href: "/shipping" },
     { label: "Contact", href: "/contact" },
+    { label: "Leave a review", href: "/feedback" },
   ],
   orders: [
-    { label: "Your Bag", href: "/cart" },
-    { label: "Track an Order", href: "/contact" },
-    { label: "Shipping & Delivery", href: "/shipping" },
+    { label: "Your bag", href: "/cart" },
+    { label: "Track an order", href: "/contact" },
+    { label: "Build a gift box", href: "/products?category=gift-boxes" },
+    { label: "Shipping & delivery", href: "/shipping" },
   ],
-  support: [
-    { label: "Leave a Review", href: "/feedback" },
-    { label: "Ask on WhatsApp", href: "https://wa.me/923001234567", external: true },
-    { label: "Bulk Orders", href: "/contact" },
+  help: [
+    { label: "Shipping & delivery", href: "/shipping" },
+    { label: "Storage guide", href: "/blog" },
+    { label: "Bulk & wholesale", href: "/contact" },
+    { label: "Lab reports", href: "/contact" },
   ],
 };
 
@@ -187,7 +190,7 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Contact — text-only, no lucide icons */}
+          {/* Help */}
           <div>
             <h3
               style={{
@@ -198,26 +201,19 @@ export function Footer() {
                 color: "rgba(255,255,255,.38)",
               }}
             >
-              Contact
+              Help
             </h3>
             <div style={{ marginTop: "18px", display: "flex", flexDirection: "column", gap: "11px" }}>
-              <span style={{ fontSize: "13.5px", color: "rgba(255,255,255,.7)" }}>
-                {SITE_CONFIG.address}
-              </span>
-              <a
-                href={`tel:${SITE_CONFIG.phone}`}
-                className="qaaq-und"
-                style={{ fontSize: "13.5px", color: "rgba(255,255,255,.7)", width: "fit-content" }}
-              >
-                {SITE_CONFIG.phone}
-              </a>
-              <a
-                href={`mailto:${SITE_CONFIG.email}`}
-                className="qaaq-und"
-                style={{ fontSize: "13.5px", color: "rgba(255,255,255,.7)", width: "fit-content" }}
-              >
-                {SITE_CONFIG.email}
-              </a>
+              {footerLinks.help.map((link) => (
+                <Link
+                  key={link.href + link.label}
+                  href={link.href}
+                  className="qaaq-und"
+                  style={{ fontSize: "13.5px", color: "rgba(255,255,255,.7)", width: "fit-content" }}
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
           </div>
         </div>

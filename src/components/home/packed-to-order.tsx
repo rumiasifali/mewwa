@@ -5,27 +5,27 @@ import { motion } from "@/components/shared/motion";
 const steps = [
   {
     n: "01",
-    title: "You place an order",
-    body: "Via WhatsApp or the site. Tell us what you want, how much, and where to ship.",
-    when: "Day 0",
+    title: "Send your list",
+    body: "WhatsApp us the items and weights. No account, no forms, no minimum.",
+    when: "2 minutes",
   },
   {
     n: "02",
-    title: "We weigh and seal",
-    body: "Your exact quantity is pulled from cold storage and vacuum-sealed with the batch number.",
-    when: "Same day",
+    title: "We confirm",
+    body: "You get a written price, current grade, and today's harvest note before you pay.",
+    when: "Same hour",
   },
   {
     n: "03",
-    title: "Lab slip enclosed",
-    body: "The latest aflatoxin and heavy-metal report for that batch goes in the box.",
-    when: "Same day",
+    title: "Weighed & sealed",
+    body: "Measured on a calibrated scale, vacuum-sealed, dated, and boxed with a card.",
+    when: "Within 24 hrs",
   },
   {
     n: "04",
-    title: "Courier picks up",
-    body: "TCS or Leopards, tracked. You get the waybill on WhatsApp within the hour.",
-    when: "Next morning",
+    title: "Tracked to you",
+    body: "TCS or Leopards nationwide, DHL internationally. Tracking sent on WhatsApp.",
+    when: "3 – 5 days",
   },
 ];
 

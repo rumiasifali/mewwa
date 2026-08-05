@@ -1,14 +1,14 @@
 "use client";
 
 const origins = [
-  "Gilgit-Baltistan",
-  "Kandahar",
-  "Rafsanjan",
   "Hunza Valley",
-  "Balochistan",
-  "Chitral",
-  "Swat Valley",
-  "Khyber Pakhtunkhwa",
+  "Kandahar",
+  "Rafsanjan, Iran",
+  "Gilgit-Baltistan",
+  "Chilas",
+  "Herat",
+  "Quetta",
+  "Skardu",
 ];
 
 export function OriginTicker() {
