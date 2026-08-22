@@ -111,6 +111,7 @@ export default async function BlogPostPage({
 
         {/* Content area with 3-column layout */}
         <div
+          className="blog-article-grid"
           style={{
             marginTop: "56px",
             display: "grid",
@@ -120,7 +121,7 @@ export default async function BlogPostPage({
           }}
         >
           {/* TOC sidebar */}
-          <aside style={{ position: "sticky", top: 130 }}>
+          <aside className="blog-article-rail" style={{ position: "sticky", top: 130 }}>
             <div
               style={{
                 fontSize: "10px",
@@ -227,7 +228,7 @@ export default async function BlogPostPage({
           </div>
 
           {/* Empty right column for grid balance */}
-          <div />
+          <div className="blog-article-spacer" />
         </div>
 
         {/* Keep reading / related posts section */}
@@ -268,6 +269,23 @@ export default async function BlogPostPage({
           Back to Journal
         </Link>
       </article>
+
+      {/* Responsive overrides */}
+      <style>{`
+        @media (max-width: 1023px) {
+          .blog-article-grid {
+            grid-template-columns: minmax(0, 1fr) !important;
+            gap: 0 !important;
+            margin-top: 40px !important;
+          }
+          .blog-article-rail {
+            display: none !important;
+          }
+          .blog-article-spacer {
+            display: none !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }

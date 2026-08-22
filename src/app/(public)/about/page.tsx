@@ -164,6 +164,7 @@ export default async function AboutPage() {
 
         {/* ───────────── 2. Stat band ───────────── */}
         <div
+          className="about-stats-grid"
           style={{
             display: "grid",
             gridTemplateColumns: `repeat(${stats.length}, 1fr)`,
@@ -216,6 +217,7 @@ export default async function AboutPage() {
         }}
       >
         <div
+          className="about-split-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "1fr 1fr",
@@ -371,6 +373,7 @@ export default async function AboutPage() {
           </h2>
 
           <div
+            className="about-valleys-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "repeat(5, 1fr)",
@@ -458,6 +461,7 @@ export default async function AboutPage() {
         }}
       >
         <div
+          className="about-proof-grid"
           style={{
             margin: "88px 0 110px",
             display: "grid",
@@ -511,6 +515,30 @@ export default async function AboutPage() {
           ))}
         </div>
       </section>
+
+      {/* Responsive overrides */}
+      <style>{`
+        @media (max-width: 1023px) {
+          .about-valleys-grid {
+            display: flex !important;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x proximity;
+          }
+          .about-valleys-grid > div {
+            flex: 0 0 240px;
+            scroll-snap-align: start;
+          }
+          .about-proof-grid { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 767px) {
+          .about-split-grid { grid-template-columns: 1fr !important; gap: 56px !important; }
+        }
+        @media (max-width: 639px) {
+          .about-stats-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .about-proof-grid { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

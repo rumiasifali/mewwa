@@ -25,10 +25,19 @@ export default function SettingsPage() {
   const { user, profile, refreshProfile } = useAuth();
   const supabase = createClient();
 
+  // Password auth only exists for email-provider accounts; Google-only
+  // users manage their credentials with Google.
+  const hasPasswordLogin = Boolean(
+    (user?.app_metadata?.providers as string[] | undefined)?.includes("email") ??
+      user?.app_metadata?.provider === "email"
+  );
+
   // Profile form
   const [fullName, setFullName] = useState("");
   const [phone, setPhone] = useState("");
+  const [waUpdates, setWaUpdates] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   // Password form
   const [currentPassword, setCurrentPassword] = useState("");
@@ -48,6 +57,7 @@ export default function SettingsPage() {
     if (profile) {
       setFullName(profile.full_name || "");
       setPhone(profile.phone || "");
+      setWaUpdates(profile.wa_updates || false);
     }
   }
 
@@ -57,7 +67,7 @@ export default function SettingsPage() {
 
     const { error } = await supabase
       .from("profiles")
-      .update({ full_name: fullName, phone })
+      .update({ full_name: fullName, phone, wa_updates: waUpdates })
       .eq("id", user.id);
 
     if (error) {
@@ -72,8 +82,12 @@ export default function SettingsPage() {
   const handlePasswordUpdate = async () => {
     setPasswordError("");
 
-    if (newPassword.length < 8) {
-      setPasswordError("Password must be at least 8 characters.");
+    if (!currentPassword) {
+      setPasswordError("Enter your current password.");
+      return;
+    }
+    if (newPassword.length < 8 || !/\d/.test(newPassword)) {
+      setPasswordError("Password must be at least 8 characters and include a number.");
       return;
     }
     if (newPassword !== confirmPassword) {
@@ -82,6 +96,18 @@ export default function SettingsPage() {
     }
 
     setPasswordSaving(true);
+
+    // Reauthenticate before allowing the change — an unlocked device
+    // must not be enough to take over the account.
+    const { error: reauthError } = await supabase.auth.signInWithPassword({
+      email: user?.email || "",
+      password: currentPassword,
+    });
+    if (reauthError) {
+      setPasswordError("Current password is incorrect.");
+      setPasswordSaving(false);
+      return;
+    }
 
     const { error } = await supabase.auth.updateUser({
       password: newPassword,
@@ -99,9 +125,21 @@ export default function SettingsPage() {
   };
 
   const handleDeleteAccount = async () => {
-    // For now, just sign out. Full account deletion would require a server-side function.
-    toast("Account deletion requested. Contact us on WhatsApp to complete.");
-    setShowDeleteConfirm(false);
+    setDeleting(true);
+    const { error } = await supabase.rpc("delete_own_account");
+    if (error) {
+      toast.error(
+        error.message.includes("Admin accounts")
+          ? "Admin accounts can't be deleted from the storefront."
+          : "Could not delete account — please contact us on WhatsApp."
+      );
+      setDeleting(false);
+      setShowDeleteConfirm(false);
+      return;
+    }
+    await supabase.auth.signOut();
+    toast.success("Your account has been deleted.");
+    window.location.href = "/";
   };
 
   return (
@@ -158,11 +196,8 @@ export default function SettingsPage() {
           }}
         >
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 14,
-            }}
+            className="grid grid-cols-1 sm:grid-cols-2"
+            style={{ gap: 14 }}
           >
             <div>
               <label style={labelStyle}>Full name</label>
@@ -216,6 +251,25 @@ export default function SettingsPage() {
               </span>
             </div>
           </div>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 10,
+              fontSize: 13.5,
+              color: C.body,
+              cursor: "pointer",
+              userSelect: "none",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={waUpdates}
+              onChange={(e) => setWaUpdates(e.target.checked)}
+              style={{ width: 15, height: 15, accentColor: C.gold }}
+            />
+            Send me order updates on WhatsApp
+          </label>
           <button
             onClick={handleProfileSave}
             disabled={profileSaving}
@@ -239,7 +293,8 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* ── Password Section ── */}
+      {/* ── Password Section (email-provider accounts only) ── */}
+      {hasPasswordLogin && (
       <div
         style={{
           marginTop: 20,
@@ -297,11 +352,8 @@ export default function SettingsPage() {
             />
           </div>
           <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: 14,
-            }}
+            className="grid grid-cols-1 sm:grid-cols-2"
+            style={{ gap: 14 }}
           >
             <div>
               <label style={labelStyle}>New password</label>
@@ -346,6 +398,7 @@ export default function SettingsPage() {
           </button>
         </div>
       </div>
+      )}
 
       {/* ── Danger Zone ── */}
       <div
@@ -402,21 +455,22 @@ export default function SettingsPage() {
           <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
             <button
               onClick={handleDeleteAccount}
+              disabled={deleting}
               className="qaaq-press"
               style={{
                 height: 38,
                 padding: "0 18px",
-                background: C.warn,
+                background: deleting ? C.muted2 : C.warn,
                 color: "#fff",
                 fontSize: 13,
                 fontWeight: 600,
                 borderRadius: 2,
                 border: "none",
-                cursor: "pointer",
+                cursor: deleting ? "not-allowed" : "pointer",
                 fontFamily: "inherit",
               }}
             >
-              Yes, delete my account
+              {deleting ? "Deleting..." : "Yes, delete my account"}
             </button>
             <button
               onClick={() => setShowDeleteConfirm(false)}

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
-import { Toaster } from "sonner";
+import { Toaster, toast } from "sonner";
 
 const sidebarLinks = [
   { href: "/admin", label: "Dashboard" },
@@ -79,6 +79,37 @@ export default function AdminLayout({
         }
       });
   }, [router, pathname]);
+
+  // Live order notifications while the panel is open
+  useEffect(() => {
+    if (!authChecked) return;
+    const supabase = createClient();
+    const channel = supabase
+      .channel("admin-order-notifications")
+      .on(
+        "postgres_changes",
+        { event: "INSERT", schema: "public", table: "orders" },
+        (payload: { new: { ref?: string; customer_name?: string; total?: number } }) => {
+          const order = payload.new;
+          toast.success(`New order ${order.ref || ""}`, {
+            description: `${order.customer_name || "Customer"} — PKR ${Number(order.total || 0).toLocaleString()}`,
+            duration: 15000,
+            action: {
+              label: "View",
+              onClick: () => router.push("/admin/orders"),
+            },
+          });
+          setCounts((prev) => ({
+            ...prev,
+            "/admin/orders": (prev["/admin/orders"] || 0) + 1,
+          }));
+        }
+      )
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [authChecked, router]);
 
   async function handleLogout() {
     const supabase = createClient();

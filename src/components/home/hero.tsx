@@ -37,7 +37,7 @@ export function Hero({ todaysPick }: { todaysPick?: Product | null }) {
   const pickWeight = pick?.weights?.[0];
   return (
     <section
-      className="relative flex items-center overflow-hidden"
+      className="qaaq-hero relative flex items-center overflow-hidden"
       style={{
         minHeight: 760,
         height: "100vh",
@@ -46,6 +46,27 @@ export function Hero({ todaysPick }: { todaysPick?: Product | null }) {
         paddingTop: 100,
       }}
     >
+      {/* Responsive overrides: drop the hard height floor on short/small
+          screens and clean up the stats row when it wraps */}
+      <style>{`
+        @media (max-width: 640px), (max-height: 700px) {
+          .qaaq-hero {
+            min-height: 100svh !important;
+            height: auto !important;
+            max-height: none !important;
+            padding-bottom: 48px !important;
+          }
+        }
+        @media (max-width: 767px) {
+          .hero-stats { gap: 18px 32px; }
+          .hero-stat {
+            border-right: none !important;
+            padding-right: 0 !important;
+            margin-right: 0 !important;
+          }
+        }
+      `}</style>
+
       {/* Background image */}
       <Image
         src="/hero-banner.png"
@@ -223,13 +244,14 @@ export function Hero({ todaysPick }: { todaysPick?: Product | null }) {
 
           {/* Stats row */}
           <motion.div
-            className="flex items-start flex-wrap"
+            className="hero-stats flex items-start flex-wrap"
             style={{ marginTop: 64 }}
             {...fadeInItem(1)}
           >
             {STATS.map((stat, i) => (
               <div
                 key={stat.label}
+                className="hero-stat"
                 style={{
                   borderRight:
                     i < STATS.length - 1

@@ -85,6 +85,7 @@ function RateCards({
             {row.zone}
           </div>
           <div
+            className="qaaq-ship-kv"
             style={{
               display: "grid",
               gridTemplateColumns: "1fr 1fr 1fr",
@@ -155,6 +156,7 @@ export default function ShippingPage() {
 
       {/* ── Zone panels ── */}
       <div
+        className="qaaq-ship-zones"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -251,6 +253,7 @@ export default function ShippingPage() {
           How we pack
         </h2>
         <div
+          className="qaaq-ship-steps"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(4, 1fr)",
@@ -310,6 +313,19 @@ export default function ShippingPage() {
         </h2>
         <ShippingFaq />
       </div>
+
+      <style>{`
+        @media (max-width: 1023px) {
+          .qaaq-ship-zones { grid-template-columns: 1fr !important; }
+          .qaaq-ship-steps { grid-template-columns: repeat(2, 1fr) !important; }
+        }
+        @media (max-width: 639px) {
+          .qaaq-ship-steps { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 479px) {
+          .qaaq-ship-kv { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

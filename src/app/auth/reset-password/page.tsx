@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/client";
 
 const C = {
@@ -33,6 +34,43 @@ export default function ResetPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [done, setDone] = useState(false);
+
+  // Only a genuine recovery link may use this form. A regular signed-in
+  // session must not be able to set a new password without the old one.
+  const [linkState, setLinkState] = useState<"checking" | "ready" | "invalid">(
+    "checking"
+  );
+
+  useEffect(() => {
+    const hasRecoveryArtifact =
+      new URLSearchParams(window.location.search).has("code") ||
+      window.location.hash.includes("type=recovery");
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event: string) => {
+      if (event === "PASSWORD_RECOVERY") setLinkState("ready");
+    });
+
+    // Fallback: the PASSWORD_RECOVERY event can fire before we subscribe.
+    // If we arrived via a recovery link and a session materialized, accept;
+    // otherwise the link is invalid/expired (or someone navigated here
+    // directly while logged in — rejected).
+    const timer = setTimeout(async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setLinkState((prev) =>
+        prev === "ready" ? prev : hasRecoveryArtifact && session ? "ready" : "invalid"
+      );
+    }, 1500);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timer);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Password strength
   const rules = useMemo(() => {
@@ -139,7 +177,61 @@ export default function ResetPasswordPage() {
           </span>
         </div>
 
-        {!done ? (
+        {!done && linkState === "checking" ? (
+          <div
+            style={{
+              padding: "44px 30px",
+              textAlign: "center",
+              fontSize: 13.5,
+              color: C.muted,
+            }}
+          >
+            Verifying your reset link...
+          </div>
+        ) : !done && linkState === "invalid" ? (
+          <div style={{ padding: "34px 30px 38px", textAlign: "center" }}>
+            <div
+              style={{
+                fontSize: 10.5,
+                letterSpacing: ".32em",
+                textTransform: "uppercase",
+                color: C.warnBorder,
+                fontWeight: 700,
+              }}
+            >
+              Link expired
+            </div>
+            <p
+              style={{
+                margin: "14px 0 0",
+                fontSize: 13.5,
+                color: C.body,
+                lineHeight: 1.6,
+              }}
+            >
+              This reset link is invalid or has expired. Request a new one
+              from the sign-in screen and try again within an hour.
+            </p>
+            <Link
+              href="/"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                marginTop: 20,
+                height: 42,
+                padding: "0 22px",
+                background: C.ink,
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                borderRadius: 2,
+                textDecoration: "none",
+              }}
+            >
+              Back to the shop
+            </Link>
+          </div>
+        ) : !done ? (
           <form
             onSubmit={handleSubmit}
             style={{

@@ -17,6 +17,7 @@ export default async function ContactPage() {
   return (
     <div style={{ maxWidth: 1400, margin: "0 auto", padding: "44px 28px 110px" }}>
       <div
+        className="qaaq-contact-grid"
         style={{
           display: "grid",
           gridTemplateColumns: "1fr 1fr",
@@ -27,7 +28,7 @@ export default async function ContactPage() {
         }}
       >
         {/* ── Left dark panel ── */}
-        <div style={{ background: "#1A1512", padding: 52 }}>
+        <div className="qaaq-contact-panel" style={{ background: "#1A1512", padding: 52 }}>
           <p
             style={{
               fontSize: 12,
@@ -201,10 +202,22 @@ export default async function ContactPage() {
         </div>
 
         {/* ── Right form panel ── */}
-        <div style={{ background: "#FBF9F5", padding: "52px 52px 52px 52px" }}>
+        <div
+          className="qaaq-contact-panel"
+          style={{ background: "#FBF9F5", padding: "52px 52px 52px 52px" }}
+        >
           <ContactForm />
         </div>
       </div>
+
+      <style>{`
+        @media (max-width: 1023px) {
+          .qaaq-contact-grid { grid-template-columns: 1fr !important; }
+        }
+        @media (max-width: 639px) {
+          .qaaq-contact-panel { padding: 28px 24px !important; }
+        }
+      `}</style>
     </div>
   );
 }

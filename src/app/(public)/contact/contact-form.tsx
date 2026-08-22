@@ -205,7 +205,10 @@ export function ContactForm() {
       {/* Message form */}
       {activeTab === "message" && (
         <form onSubmit={handleMessageSubmit} style={{ marginTop: 28 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div
+            className="qaaq-cf-row"
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+          >
             <div>
               <label style={labelStyle} htmlFor="msg-name">
                 Name
@@ -264,7 +267,10 @@ export function ContactForm() {
       {/* Review form */}
       {activeTab === "review" && (
         <form onSubmit={handleReviewSubmit} style={{ marginTop: 28 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div
+            className="qaaq-cf-row"
+            style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}
+          >
             <div>
               <label style={labelStyle} htmlFor="rev-name">
                 Name
@@ -370,6 +376,12 @@ export function ContactForm() {
           </button>
         </form>
       )}
+
+      <style>{`
+        @media (max-width: 639px) {
+          .qaaq-cf-row { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }

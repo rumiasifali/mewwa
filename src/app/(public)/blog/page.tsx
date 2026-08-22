@@ -83,6 +83,7 @@ export default async function BlogPage() {
           style={{ display: "block", marginTop: 0, textDecoration: "none", cursor: "pointer" }}
         >
           <div
+            className="blog-featured-grid"
             style={{
               display: "grid",
               gridTemplateColumns: "1.1fr .9fr",
@@ -92,6 +93,7 @@ export default async function BlogPage() {
           >
             {/* Image side */}
             <div
+              className="blog-featured-media"
               style={{
                 position: "relative",
                 minHeight: 430,
@@ -112,6 +114,7 @@ export default async function BlogPage() {
 
             {/* Content side */}
             <div
+              className="blog-featured-body"
               style={{
                 padding: "48px 44px",
                 display: "flex",
@@ -216,6 +219,7 @@ export default async function BlogPage() {
       {/* ── Post grid ── */}
       {gridPosts.length > 0 && (
         <div
+          className="blog-posts-grid"
           style={{
             display: "grid",
             gridTemplateColumns: "repeat(3, 1fr)",
@@ -324,6 +328,7 @@ export default async function BlogPage() {
 
       {/* ── Newsletter CTA ── */}
       <div
+        className="blog-newsletter"
         style={{
           margin: "64px 0 110px",
           background: "#F5F1EA",
@@ -408,6 +413,21 @@ export default async function BlogPage() {
           No posts published yet.
         </div>
       )}
+
+      {/* Responsive overrides */}
+      <style>{`
+        @media (max-width: 1023px) {
+          .blog-featured-grid { grid-template-columns: 1fr !important; }
+          .blog-posts-grid { grid-template-columns: repeat(2, 1fr) !important; }
+          .blog-newsletter { grid-template-columns: 1fr !important; gap: 28px !important; }
+        }
+        @media (max-width: 639px) {
+          .blog-featured-media { min-height: 260px !important; }
+          .blog-featured-body { padding: 32px 24px 36px !important; }
+          .blog-posts-grid { grid-template-columns: 1fr !important; }
+          .blog-newsletter { padding: 32px 24px 36px !important; }
+        }
+      `}</style>
     </div>
   );
 }

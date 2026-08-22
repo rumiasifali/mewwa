@@ -132,6 +132,7 @@ export default function AccountPage() {
 
       {/* Stats */}
       <div
+        className="qaaq-acct-stats"
         style={{
           marginTop: 28,
           display: "grid",
@@ -355,6 +356,12 @@ export default function AccountPage() {
           ))}
         </div>
       )}
+
+      <style>{`
+        @media (max-width: 639px) {
+          .qaaq-acct-stats { grid-template-columns: 1fr !important; }
+        }
+      `}</style>
     </div>
   );
 }
