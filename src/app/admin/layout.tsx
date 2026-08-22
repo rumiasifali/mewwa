@@ -31,10 +31,23 @@ export default function AdminLayout({
     const supabase = createClient();
     supabase.auth
       .getUser()
-      .then(({ data: { user } }: { data: { user: unknown } }) => {
+      .then(async ({ data: { user } }: { data: { user: { id: string } | null } }) => {
         if (!user) {
-          router.push("/login?redirectTo=" + pathname);
-        } else {
+          router.push("/login?redirectTo=" + encodeURIComponent(pathname));
+          return;
+        }
+        // Server-side enforcement lives in proxy.ts + RLS; this check just
+        // keeps non-admins from seeing a broken shell.
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("role")
+          .eq("id", user.id)
+          .maybeSingle();
+        if (profile?.role !== "admin") {
+          router.push("/");
+          return;
+        }
+        {
           setAuthChecked(true);
           // Fetch counts for sidebar
           Promise.all([
@@ -224,29 +237,12 @@ export default function AdminLayout({
           </div>
           <div
             style={{
-              marginTop: 10,
-              height: 3,
-              background: "rgba(255,255,255,.12)",
-            }}
-          >
-            <span
-              style={{
-                display: "block",
-                height: "100%",
-                width: "34%",
-                background: "#C8922E",
-                transition: "width .1s linear",
-              }}
-            />
-          </div>
-          <div
-            style={{
               marginTop: 8,
               fontSize: 11,
               color: "rgba(255,255,255,.45)",
             }}
           >
-            340 MB of 1 GB · 118 images
+            Managed in Supabase dashboard
           </div>
         </div>
 

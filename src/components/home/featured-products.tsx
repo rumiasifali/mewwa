@@ -1,12 +1,10 @@
 "use client";
 
+import { useSiteSettings } from "@/contexts/site-settings-context";
 import { useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion } from "@/components/shared/motion";
-import { Star } from "lucide-react";
 import { formatPrice, getWhatsAppLink } from "@/lib/constants";
-import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
 import { toast } from "sonner";
 import type { Product } from "@/types";
@@ -125,21 +123,17 @@ export function FeaturedProducts({ products }: { products: Product[] }) {
 
 /* ── Individual rail card with working Add to Cart ── */
 function RailCard({ product: p }: { product: Product }) {
-  const { user, openAuthModal } = useAuth();
-  const { addItem, openCart } = useCart();
+  const { whatsappNumber } = useSiteSettings();
+  const { requestAddItem, openCart } = useCart();
   const firstWeight = p.weights[0];
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!user) {
-      openAuthModal("login");
-      return;
-    }
     if (!firstWeight) return;
 
-    addItem({
+    const added = requestAddItem({
       productId: p.id,
       productName: p.name,
       productSlug: p.slug,
@@ -150,6 +144,7 @@ function RailCard({ product: p }: { product: Product }) {
       price: firstWeight.price,
       currency: firstWeight.currency || "PKR",
     });
+    if (!added) return;
 
     toast("Added to your order", {
       description: `${p.name} — ${firstWeight.label}`,
@@ -164,7 +159,7 @@ function RailCard({ product: p }: { product: Product }) {
   const handleWhatsApp = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    window.open(getWhatsAppLink(p, firstWeight?.label), "_blank");
+    window.open(getWhatsAppLink(p, firstWeight?.label, whatsappNumber), "_blank");
   };
 
   return (
@@ -360,12 +355,11 @@ function RailCard({ product: p }: { product: Product }) {
           {p.name}
         </h3>
 
-        {/* Price + rating */}
+        {/* Price */}
         <div
           style={{
             display: "flex",
             alignItems: "baseline",
-            justifyContent: "space-between",
             marginTop: 14,
             paddingTop: 12,
             borderTop: "1px solid #E7E1D7",
@@ -379,21 +373,6 @@ function RailCard({ product: p }: { product: Product }) {
               / {firstWeight?.label || "—"}
             </span>
           </div>
-          <span
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 4,
-              fontSize: 11.5,
-              color: "#4A4139",
-              fontWeight: 500,
-            }}
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="#C8922E">
-              <path d="M12 2l2.9 6.3 6.9.8-5.1 4.7 1.4 6.8L12 17.3 5.9 20.6l1.4-6.8L2.2 9.1l6.9-.8z" />
-            </svg>
-            4.8 · 24
-          </span>
         </div>
       </Link>
     </div>

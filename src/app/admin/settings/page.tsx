@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 interface Settings {
   id: string;
@@ -15,9 +16,9 @@ interface Settings {
   phone: string;
   address: string;
   currency: string;
-  flat_rate?: string;
-  free_shipping_threshold?: string;
-  announcement_text?: string;
+  flat_rate?: string | number | null;
+  free_shipping_threshold?: string | number | null;
+  announcement_text?: string | null;
   social_links: {
     instagram?: string;
     facebook?: string;
@@ -148,7 +149,10 @@ export default function AdminSettingsPage() {
   }, [supabase]);
 
   useEffect(() => {
-    fetchSettings();
+    const load = async () => {
+      await fetchSettings();
+    };
+    void load();
   }, [fetchSettings]);
 
   async function handleSave(e: React.FormEvent) {
@@ -157,9 +161,28 @@ export default function AdminSettingsPage() {
     setSaving(true);
 
     const { id, ...data } = settings;
-    await supabase.from("site_settings").update(data).eq("id", id);
+    const payload = {
+      ...data,
+      flat_rate:
+        data.flat_rate === "" || data.flat_rate == null
+          ? null
+          : Number(data.flat_rate),
+      free_shipping_threshold:
+        data.free_shipping_threshold === "" ||
+        data.free_shipping_threshold == null
+          ? null
+          : Number(data.free_shipping_threshold),
+    };
+    const { error } = await supabase
+      .from("site_settings")
+      .update(payload)
+      .eq("id", id);
 
     setSaving(false);
+    if (error) {
+      toast.error(`Could not save settings: ${error.message}`);
+      return;
+    }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   }
@@ -374,13 +397,13 @@ export default function AdminSettingsPage() {
           <div style={{ marginTop: 18, display: "flex", flexDirection: "column", gap: fieldGap }}>
             <Field
               label="FLAT_RATE (PKR)"
-              value={settings.flat_rate || ""}
+              value={String(settings.flat_rate ?? "")}
               onChange={(v) => update("flat_rate", v)}
               hint="Domestic courier"
             />
             <Field
               label="FREE_SHIPPING_OVER (PKR)"
-              value={settings.free_shipping_threshold || ""}
+              value={String(settings.free_shipping_threshold ?? "")}
               onChange={(v) => update("free_shipping_threshold", v)}
               hint="Drives the announcement bar copy"
             />

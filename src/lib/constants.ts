@@ -1,6 +1,18 @@
 import type { Product } from "@/types";
 
-export const WHATSAPP_NUMBER = "923001234567"; // Replace with your actual number
+// Build-time fallback only — the live value comes from site_settings.whatsapp_number
+export const WHATSAPP_NUMBER = "923427059590";
+
+/**
+ * Normalizes an admin-entered Pakistani phone number to the digits-only
+ * international form wa.me requires: "0342-7059590" → "923427059590".
+ */
+export function normalizeWhatsAppNumber(raw: string | null | undefined): string {
+  const digits = (raw || "").replace(/\D/g, "");
+  if (!digits) return WHATSAPP_NUMBER;
+  if (digits.startsWith("0")) return `92${digits.slice(1)}`;
+  return digits;
+}
 
 export const SITE_CONFIG = {
   name: "QAAQ",
@@ -27,8 +39,12 @@ export const NAV_LINKS = [
   { label: "Contact", href: "/contact" },
 ] as const;
 
-export function getWhatsAppLink(product?: Product, weight?: string) {
-  const base = `https://wa.me/${WHATSAPP_NUMBER}`;
+export function getWhatsAppLink(
+  product?: Product,
+  weight?: string,
+  number: string = WHATSAPP_NUMBER
+) {
+  const base = `https://wa.me/${number}`;
   if (!product) return `${base}?text=${encodeURIComponent("Hi, I'd like to know more about your products.")}`;
   const message = weight
     ? `Hi, I'd like to order *${product.name}* — ${weight}. Please share the details.`

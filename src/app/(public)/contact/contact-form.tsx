@@ -1,7 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Star } from "lucide-react";
+import { Star, Loader2 } from "lucide-react";
+import { submitContactMessage } from "./actions";
+import { submitFeedback } from "../feedback/actions";
 
 type Tab = "message" | "review";
 
@@ -10,6 +12,76 @@ export function ContactForm() {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  function switchTab(tab: Tab) {
+    setActiveTab(tab);
+    setError("");
+  }
+
+  async function handleMessageSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+
+    const fd = new FormData(e.currentTarget);
+
+    try {
+      const result = await submitContactMessage({
+        name: String(fd.get("name") || ""),
+        email: String(fd.get("email") || ""),
+        message: String(fd.get("message") || ""),
+      });
+
+      if (!result.success) {
+        setError(result.error || "Failed to send message");
+        return;
+      }
+
+      setSubmitted(true);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleReviewSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError("");
+
+    if (rating < 1) {
+      setError("Please select a rating");
+      return;
+    }
+
+    setLoading(true);
+    const fd = new FormData(e.currentTarget);
+
+    try {
+      const result = await submitFeedback({
+        name: String(fd.get("name") || ""),
+        email: String(fd.get("email") || ""),
+        location: String(fd.get("location") || ""),
+        rating,
+        content: String(fd.get("review") || ""),
+        product_id: null,
+      });
+
+      if (!result.success) {
+        setError(result.error || "Failed to submit review");
+        return;
+      }
+
+      setSubmitted(true);
+      setRating(0);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }
 
   const tabStyle = (tab: Tab): React.CSSProperties => ({
     padding: "14px 20px",
@@ -50,6 +122,35 @@ export function ContactForm() {
     marginBottom: 6,
   };
 
+  const submitButtonStyle: React.CSSProperties = {
+    marginTop: 24,
+    width: "100%",
+    height: 48,
+    background: "#1A1512",
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: 600,
+    border: "none",
+    borderRadius: 2,
+    cursor: loading ? "wait" : "pointer",
+    fontFamily: "inherit",
+    opacity: loading ? 0.7 : 1,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+  };
+
+  const errorStyle: React.CSSProperties = {
+    marginTop: 16,
+    padding: "12px 14px",
+    background: "#FBEFEA",
+    border: "1px solid #E3B7A6",
+    borderRadius: 2,
+    fontSize: 13.5,
+    color: "#8C3B21",
+  };
+
   if (submitted) {
     return (
       <div style={{ textAlign: "center", padding: "60px 0" }}>
@@ -57,7 +158,9 @@ export function ContactForm() {
           {activeTab === "message" ? "Message sent!" : "Review submitted!"}
         </p>
         <p style={{ fontSize: 14, color: "#7C7268", marginTop: 8 }}>
-          Thank you. We&apos;ll be in touch soon.
+          {activeTab === "message"
+            ? "Thank you. We'll be in touch soon."
+            : "Thank you. Your review will appear once it's approved."}
         </p>
         <button
           onClick={() => setSubmitted(false)}
@@ -91,23 +194,17 @@ export function ContactForm() {
           borderBottom: "1px solid #E7E1D7",
         }}
       >
-        <button style={tabStyle("message")} onClick={() => setActiveTab("message")}>
+        <button style={tabStyle("message")} onClick={() => switchTab("message")}>
           Message
         </button>
-        <button style={tabStyle("review")} onClick={() => setActiveTab("review")}>
+        <button style={tabStyle("review")} onClick={() => switchTab("review")}>
           Review
         </button>
       </div>
 
       {/* Message form */}
       {activeTab === "message" && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSubmitted(true);
-          }}
-          style={{ marginTop: 28 }}
-        >
+        <form onSubmit={handleMessageSubmit} style={{ marginTop: 28 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div>
               <label style={labelStyle} htmlFor="msg-name">
@@ -155,36 +252,18 @@ export function ContactForm() {
             />
           </div>
 
-          <button
-            type="submit"
-            style={{
-              marginTop: 24,
-              width: "100%",
-              height: 48,
-              background: "#1A1512",
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 600,
-              border: "none",
-              borderRadius: 2,
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            Send message
+          {error && <div style={errorStyle}>{error}</div>}
+
+          <button type="submit" disabled={loading} style={submitButtonStyle}>
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            {loading ? "Sending..." : "Send message"}
           </button>
         </form>
       )}
 
       {/* Review form */}
       {activeTab === "review" && (
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            setSubmitted(true);
-          }}
-          style={{ marginTop: 28 }}
-        >
+        <form onSubmit={handleReviewSubmit} style={{ marginTop: 28 }}>
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div>
               <label style={labelStyle} htmlFor="rev-name">
@@ -249,14 +328,14 @@ export function ContactForm() {
           </div>
 
           <div style={{ marginTop: 16 }}>
-            <label style={labelStyle} htmlFor="rev-subject">
-              Subject
+            <label style={labelStyle} htmlFor="rev-location">
+              City / Location
             </label>
             <input
-              id="rev-subject"
-              name="subject"
+              id="rev-location"
+              name="location"
               required
-              placeholder="Review title"
+              placeholder="Islamabad, Pakistan"
               style={inputStyle}
             />
           </div>
@@ -278,25 +357,16 @@ export function ContactForm() {
                 resize: "vertical",
               }}
             />
+            <p style={{ fontSize: 11.5, color: "#9A9086", marginTop: 6 }}>
+              Minimum 20 characters. Reviews are moderated before publishing.
+            </p>
           </div>
 
-          <button
-            type="submit"
-            style={{
-              marginTop: 24,
-              width: "100%",
-              height: 48,
-              background: "#1A1512",
-              color: "#fff",
-              fontSize: 14,
-              fontWeight: 600,
-              border: "none",
-              borderRadius: 2,
-              cursor: "pointer",
-              fontFamily: "inherit",
-            }}
-          >
-            Submit review
+          {error && <div style={errorStyle}>{error}</div>}
+
+          <button type="submit" disabled={loading} style={submitButtonStyle}>
+            {loading && <Loader2 size={16} className="animate-spin" />}
+            {loading ? "Submitting..." : "Submit review"}
           </button>
         </form>
       )}

@@ -50,9 +50,12 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
       setUploading(true);
       setError("");
 
-      // Delete old image if replacing
-      if (value) {
-        await deleteImageFromUrl(value);
+      // Enforce the limit the UI promises
+      const MAX_SIZE = 5 * 1024 * 1024;
+      if (file.size > MAX_SIZE) {
+        setError("Image is too large — maximum size is 5MB.");
+        setUploading(false);
+        return;
       }
 
       // Convert unsupported formats
@@ -65,12 +68,22 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
         return;
       }
 
-      const ext = processedFile.name.split(".").pop() || "jpg";
+      // Only image extensions may land in the public bucket — a spoofed
+      // name like "x.html" would otherwise be served as HTML (stored XSS).
+      const ALLOWED_EXT: Record<string, string> = {
+        jpg: "image/jpeg",
+        jpeg: "image/jpeg",
+        png: "image/png",
+        webp: "image/webp",
+        gif: "image/gif",
+      };
+      const rawExt = (processedFile.name.split(".").pop() || "jpg").toLowerCase();
+      const ext = ALLOWED_EXT[rawExt] ? rawExt : "jpg";
       const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
       const { data, error: uploadError } = await supabase.storage
         .from("product-images")
-        .upload(fileName, processedFile);
+        .upload(fileName, processedFile, { contentType: ALLOWED_EXT[ext] });
 
       if (uploadError) {
         console.error("Upload error:", uploadError);
@@ -82,6 +95,11 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
       const { data: urlData } = supabase.storage
         .from("product-images")
         .getPublicUrl(data.path);
+
+      // Remove the replaced image only after the new upload succeeded
+      if (value) {
+        await deleteImageFromUrl(value);
+      }
 
       onChange(urlData.publicUrl);
       setUploading(false);

@@ -12,6 +12,9 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Static design references, not application code:
+    "designs/**",
+    "temp/**",
   ]),
 ]);
 

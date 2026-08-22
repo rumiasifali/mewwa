@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Plus } from "lucide-react";
 import { formatPrice } from "@/lib/constants";
-import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
 import { toast } from "sonner";
 import type { Product } from "@/types";
@@ -14,21 +13,15 @@ export function CatalogCard({ product }: { product: Product }) {
   const grade = product.tags.find(
     (t) => t.toLowerCase() !== "bestseller" && t.toLowerCase() !== "rare"
   );
-  const { user, openAuthModal } = useAuth();
-  const { addItem, openCart } = useCart();
+  const { requestAddItem, openCart } = useCart();
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!user) {
-      openAuthModal("login");
-      return;
-    }
-
     if (!firstWeight) return;
 
-    addItem({
+    const added = requestAddItem({
       productId: product.id,
       productName: product.name,
       productSlug: product.slug,
@@ -39,6 +32,7 @@ export function CatalogCard({ product }: { product: Product }) {
       price: firstWeight.price,
       currency: firstWeight.currency || "PKR",
     });
+    if (!added) return;
 
     toast("Added to your order", {
       description: `${product.name} — ${firstWeight.label}`,
@@ -181,23 +175,6 @@ export function CatalogCard({ product }: { product: Product }) {
       >
         {product.name}
       </h3>
-
-      {/* Rating row */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 5,
-          marginTop: 7,
-        }}
-      >
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="#C8922E">
-          <path d="M5 0l1.12 3.45h3.63l-2.94 2.13 1.12 3.45L5 6.9 2.07 9.03l1.12-3.45L.25 3.45h3.63L5 0z" />
-        </svg>
-        <span style={{ fontSize: 11.5, color: "#7C7268", lineHeight: 1 }}>
-          4.8 (24)
-        </span>
-      </div>
 
       {/* Price row */}
       <div

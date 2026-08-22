@@ -20,9 +20,9 @@ const proofItems = [
     body: "No wholesale market in between. We name the valley because we were standing in it.",
   },
   {
-    tag: "6,400 orders",
-    title: "4.8 average, 621 reviews",
-    body: "Reviews are tied to real order numbers. We publish the bad ones too.",
+    tag: "Real reviews",
+    title: "We publish the bad ones too",
+    body: "Reviews from real orders, published as written — nothing cherry-picked, nothing paid for.",
   },
 ];
 

@@ -56,7 +56,10 @@ export default function AdminTestimonialsPage() {
   }, []);
 
   useEffect(() => {
-    fetchData();
+    const load = async () => {
+      await fetchData();
+    };
+    void load();
   }, [fetchData]);
 
   async function handleApprove(id: string, name: string) {

@@ -67,7 +67,10 @@ export default function AdminCategoriesPage() {
   }, [supabase]);
 
   useEffect(() => {
-    fetchData();
+    const load = async () => {
+      await fetchData();
+    };
+    void load();
   }, [fetchData]);
 
   function generateSlug(name: string) {

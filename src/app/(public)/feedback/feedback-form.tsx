@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Star, Loader2, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +70,7 @@ export function FeedbackForm({ products }: { products: Product[] }) {
               Approved reviews will appear on our website to help other customers discover the quality of QAAQ.
             </p>
             <Button asChild className="rounded-xl">
-              <a href="/">Back to Home</a>
+              <Link href="/">Back to Home</Link>
             </Button>
           </div>
         </div>
@@ -89,7 +90,7 @@ export function FeedbackForm({ products }: { products: Product[] }) {
             Leave Your Feedback
           </h1>
           <p className="text-lg text-muted-foreground max-w-xl">
-            We'd love to hear about your experience with QAAQ. Your honest feedback helps us improve and helps other customers make the right choice.
+            We&apos;d love to hear about your experience with QAAQ. Your honest feedback helps us improve and helps other customers make the right choice.
           </p>
         </div>
 

@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo, useEffect, useCallback } from "react";
+import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Search, X, ChevronDown, Star, Check, Package, MessageCircle } from "lucide-react";
 import { CatalogCard } from "@/components/products/catalog-card";
 import { getWhatsAppLink } from "@/lib/constants";
+import { useSiteSettings } from "@/contexts/site-settings-context";
 import type { Product, Category } from "@/types";
 
 /* ────────────────────────────────────────────
@@ -74,6 +75,7 @@ export function ProductsGrid({
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+  const { whatsappNumber } = useSiteSettings();
 
   /* ── state ── */
   const categoryParam = searchParams.get("category");
@@ -88,14 +90,15 @@ export function ProductsGrid({
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  /* Sync URL param on mount / change */
-  useEffect(() => {
-    const cat = searchParams.get("category");
-    if (cat && !activeCategories.includes(cat)) {
-      setActiveCategories([cat]);
+  /* Sync from the URL param when it changes (render-time state
+     adjustment — searchParams is the external source of truth) */
+  const [prevCategoryParam, setPrevCategoryParam] = useState(categoryParam);
+  if (categoryParam !== prevCategoryParam) {
+    setPrevCategoryParam(categoryParam);
+    if (categoryParam && !activeCategories.includes(categoryParam)) {
+      setActiveCategories([categoryParam]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchParams]);
+  }
 
   /* Update URL when category changes */
   const updateCategoryURL = useCallback(
@@ -1033,7 +1036,7 @@ export function ProductsGrid({
                     lineHeight: 1.5,
                   }}
                 >
-                  We're always adding new products. Reach out to us or browse
+                  We&apos;re always adding new products. Reach out to us or browse
                   our full catalog.
                 </p>
                 <div
@@ -1046,7 +1049,7 @@ export function ProductsGrid({
                   }}
                 >
                   <a
-                    href={getWhatsAppLink()}
+                    href={getWhatsAppLink(undefined, undefined, whatsappNumber)}
                     target="_blank"
                     rel="noopener noreferrer"
                     style={{

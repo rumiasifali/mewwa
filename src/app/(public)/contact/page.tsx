@@ -1,5 +1,6 @@
 import { getSettings } from "@/lib/data";
 import { ContactForm } from "./contact-form";
+import { normalizeWhatsAppNumber } from "@/lib/constants";
 import { Mail, Phone, MapPin, MessageCircle } from "lucide-react";
 
 export const revalidate = 60;
@@ -7,11 +8,7 @@ export const revalidate = 60;
 export default async function ContactPage() {
   const settings = await getSettings();
 
-  const rawNumber = settings?.whatsapp_number ?? "923001234567";
-  const whatsappNumber = rawNumber
-    .replace(/[\s\-()]/g, "")
-    .replace(/^\+/, "")
-    .replace(/^0/, "92");
+  const whatsappNumber = normalizeWhatsAppNumber(settings?.whatsapp_number);
   const whatsappLink = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent("Hi, I'd like to know more about your products.")}`;
   const phone = settings?.phone ?? "+92-300-1234567";
   const email = settings?.email ?? "hello@qaaq.pk";

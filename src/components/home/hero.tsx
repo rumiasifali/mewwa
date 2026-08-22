@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useSiteSettings } from "@/contexts/site-settings-context";
 import { motion } from "@/components/shared/motion";
 import { ArrowRight } from "lucide-react";
 import { getWhatsAppLink } from "@/lib/constants";
@@ -21,9 +22,9 @@ const fadeInItem = (delay: number) => ({
 });
 
 const STATS = [
-  { value: "6,400+", label: "Orders packed" },
-  { value: "3 yrs", label: "Direct sourcing" },
-  { value: "100%", label: "Lab-tested" },
+  { value: "Small batches", label: "Packed to order" },
+  { value: "Direct", label: "From the grower" },
+  { value: "Lab-tested", label: "Every batch" },
   { value: "48 hrs", label: "Farm to pack" },
 ];
 
@@ -31,6 +32,7 @@ import type { Product } from "@/types";
 import { formatPrice } from "@/lib/constants";
 
 export function Hero({ todaysPick }: { todaysPick?: Product | null }) {
+  const { whatsappNumber } = useSiteSettings();
   const pick = todaysPick;
   const pickWeight = pick?.weights?.[0];
   return (
@@ -182,7 +184,7 @@ export function Hero({ todaysPick }: { todaysPick?: Product | null }) {
 
             {/* Secondary — WhatsApp */}
             <a
-              href={getWhatsAppLink()}
+              href={getWhatsAppLink(undefined, undefined, whatsappNumber)}
               target="_blank"
               rel="noopener noreferrer"
               className="qaaq-press inline-flex items-center justify-center"

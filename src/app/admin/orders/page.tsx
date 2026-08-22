@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ExternalLink } from "lucide-react";
+import { toast } from "sonner";
 
 export const dynamic = "force-dynamic";
 
@@ -36,11 +37,11 @@ interface OrderItem {
   origin: string | null;
 }
 
-const STATUSES = ["all", "new", "confirmed", "packed", "shipped", "delivered"] as const;
+const STATUSES = ["all", "pending", "confirmed", "packed", "shipped", "delivered"] as const;
 
 const STATUS_LABELS: Record<string, string> = {
   all: "All",
-  new: "New",
+  pending: "New",
   confirmed: "Confirmed",
   packed: "Packed",
   shipped: "Shipped",
@@ -49,7 +50,7 @@ const STATUS_LABELS: Record<string, string> = {
 
 /* #53 — dot colors per design */
 const STATUS_DOT_COLORS: Record<string, string> = {
-  new: "#C8922E",
+  pending: "#C8922E",
   confirmed: "#4E7A3E",
   packed: "#4E7A3E",
   shipped: "#4E7A3E",
@@ -114,34 +115,31 @@ export default function AdminOrdersPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
-  const [lastSynced, setLastSynced] = useState<Date>(new Date());
+  // "Synced ago" label — computed when a fetch completes (render must stay
+  // pure, so we don't read Date.now() during render).
+  const [syncedAgo, setSyncedAgo] = useState("just now");
 
   const fetchOrders = useCallback(async () => {
-    let query = supabase
+    const { data } = await supabase
       .from("orders")
       .select("*")
       .order("created_at", { ascending: false });
-
-    if (filter !== "all") {
-      query = query.eq("status", filter);
-    }
-
-    const { data } = await query;
     setOrders(data || []);
     setLoading(false);
-    setLastSynced(new Date());
-  }, [supabase, filter]);
+    setSyncedAgo("just now");
+  }, [supabase]);
 
   useEffect(() => {
-    fetchOrders();
+    const load = async () => {
+      await fetchOrders();
+    };
+    void load();
   }, [fetchOrders]);
 
-  // Fetch items for selected order
+  // Fetch items for selected order (clearing on deselect happens in the
+  // click/cancel handlers so the effect only syncs from Supabase)
   useEffect(() => {
-    if (!selectedId) {
-      setSelectedItems([]);
-      return;
-    }
+    if (!selectedId) return;
     const fetchItems = async () => {
       const { data } = await supabase
         .from("order_items")
@@ -153,23 +151,36 @@ export default function AdminOrdersPage() {
   }, [selectedId, supabase]);
 
   const updateStatus = async (orderId: string, newStatus: string) => {
-    await supabase
+    const { error } = await supabase
       .from("orders")
       .update({ status: newStatus })
       .eq("id", orderId);
+    if (error) {
+      toast.error(`Could not update order: ${error.message}`);
+      return;
+    }
     fetchOrders();
   };
 
   const cancelOrder = async (orderId: string) => {
-    await supabase
+    if (!window.confirm("Cancel this order? This will mark it as cancelled.")) return;
+    const { error } = await supabase
       .from("orders")
       .update({ status: "cancelled" })
       .eq("id", orderId);
+    if (error) {
+      toast.error(`Could not cancel order: ${error.message}`);
+      return;
+    }
     fetchOrders();
-    if (selectedId === orderId) setSelectedId(null);
+    if (selectedId === orderId) {
+      setSelectedId(null);
+      setSelectedItems([]);
+    }
   };
 
   const filtered = orders.filter((o) => {
+    if (filter !== "all" && o.status !== filter) return false;
     if (!search.trim()) return true;
     const q = search.toLowerCase();
     return (
@@ -196,12 +207,11 @@ export default function AdminOrdersPage() {
   const showFrom = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
   const showTo = Math.min(currentPage * PAGE_SIZE, filtered.length);
 
-  // Synced ago text
-  const syncedAgo = () => {
-    const diff = Math.floor((Date.now() - lastSynced.getTime()) / 60000);
-    if (diff < 1) return "just now";
-    return `${diff} min ago`;
-  };
+  // Reset to page 1 if the filtered list shrinks below the current page
+  // start (render-time state adjustment, avoids an effect pass)
+  if (currentPage > 1 && (currentPage - 1) * PAGE_SIZE >= filtered.length) {
+    setCurrentPage(1);
+  }
 
   // Timeline helper
   const getTimelineStatus = (stepKey: string, orderStatus: string) => {
@@ -239,50 +249,6 @@ export default function AdminOrdersPage() {
           >
             Every order starts as a WhatsApp thread. Confirm it here and the status follows the pouch.
           </p>
-        </div>
-        {/* #1/#2 — button sizes */}
-        <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
-          <button
-            style={{
-              height: 38,
-              padding: "0 16px",
-              fontSize: 13,
-              fontWeight: 500,
-              fontFamily: "inherit",
-              color: "#1A1512",
-              background: "#fff",
-              border: "1px solid #DCD3C5",
-              borderRadius: 2,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            Export CSV
-          </button>
-          <button
-            style={{
-              height: 38,
-              padding: "0 16px",
-              fontSize: 13,
-              fontWeight: 600,
-              fontFamily: "inherit",
-              color: "#fff",
-              background: "#1A1512",
-              borderRadius: 2,
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 8,
-              border: "none",
-            }}
-          >
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4">
-              <path d="M12 5v14M5 12h14" />
-            </svg>
-            Log an order
-          </button>
         </div>
       </div>
 
@@ -391,7 +357,7 @@ export default function AdminOrdersPage() {
             whiteSpace: "nowrap",
           }}
         >
-          Synced with Supabase {syncedAgo()}
+          Synced with Supabase {syncedAgo}
         </span>
       </div>
 
@@ -415,7 +381,7 @@ export default function AdminOrdersPage() {
           <p style={{ fontSize: 13, color: "#9A9086", marginTop: 6 }}>
             {filter === "all"
               ? "Orders will appear here when customers place them."
-              : `No ${filter} orders right now.`}
+              : `No ${(STATUS_LABELS[filter] || filter).toLowerCase()} orders right now.`}
           </p>
         </div>
       ) : (
@@ -510,7 +476,11 @@ export default function AdminOrdersPage() {
             {paginatedOrders.map((o) => (
               <div
                 key={o.id}
-                onClick={() => setSelectedId(o.id === selectedId ? null : o.id)}
+                onClick={() => {
+                  const next = o.id === selectedId ? null : o.id;
+                  setSelectedId(next);
+                  if (!next) setSelectedItems([]);
+                }}
                 className="qaaq-row"
                 style={{
                   display: "grid",
@@ -911,12 +881,16 @@ export default function AdminOrdersPage() {
                     /* #58 — font weights: active=600, done=500, future=500 */
                     const textWeight = isActive ? 600 : isDone ? 500 : 500;
 
+                    /* Only the first step has a real timestamp (created_at) \u2014
+                       other steps have no recorded time, so show no date */
                     const whenText = isFuture
                       ? "\u2014"
-                      : new Date(selected.created_at).toLocaleDateString("en-US", {
-                          day: "numeric",
-                          month: "short",
-                        });
+                      : idx === 0
+                        ? new Date(selected.created_at).toLocaleDateString("en-US", {
+                            day: "numeric",
+                            month: "short",
+                          })
+                        : null;
 
                     return (
                       <div key={step.key} style={{ display: "grid", gridTemplateColumns: "14px 1fr", gap: 10, paddingBottom: isLast ? 0 : 12 }}>
@@ -943,15 +917,17 @@ export default function AdminOrdersPage() {
                           >
                             {step.label}
                           </div>
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: isFuture ? "#D0C9C0" : "#9A9086",
-                              marginTop: 1,
-                            }}
-                          >
-                            {whenText}
-                          </div>
+                          {whenText && (
+                            <div
+                              style={{
+                                fontSize: 11,
+                                color: isFuture ? "#D0C9C0" : "#9A9086",
+                                marginTop: 1,
+                              }}
+                            >
+                              {whenText}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
@@ -985,25 +961,6 @@ export default function AdminOrdersPage() {
                 )}
                 {selected.status !== "cancelled" && selected.status !== "delivered" && (
                   <div style={{ display: "flex", gap: 8 }}>
-                    <button
-                      style={{
-                        flex: 1,
-                        height: 36,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        fontSize: 12.5,
-                        fontWeight: 500,
-                        fontFamily: "inherit",
-                        color: "#4A4139",
-                        background: "#fff",
-                        border: "1px solid #DCD3C5",
-                        borderRadius: 2,
-                        cursor: "pointer",
-                      }}
-                    >
-                      Print label
-                    </button>
                     <button
                       onClick={() => cancelOrder(selected.id)}
                       style={{

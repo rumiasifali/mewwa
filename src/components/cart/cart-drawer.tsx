@@ -5,7 +5,9 @@ import Link from "next/link";
 import { X, Minus, Plus, ShoppingBag, Search, Loader2 } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
-import { WHATSAPP_NUMBER, formatPrice } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
+import { formatPrice } from "@/lib/constants";
+import { useSiteSettings } from "@/contexts/site-settings-context";
 import { toast } from "sonner";
 
 const C = {
@@ -26,9 +28,8 @@ const C = {
   ok: "#6E7F4E",
 } as const;
 
-const FREE_SHIPPING_THRESHOLD = 5000;
-
 export function CartDrawer() {
+  const { whatsappNumber, freeShippingThreshold } = useSiteSettings();
   const {
     items,
     itemCount,
@@ -40,7 +41,7 @@ export function CartDrawer() {
     refreshCart,
     getWhatsAppCheckoutUrl,
   } = useCart();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
   const [placing, setPlacing] = useState(false);
 
   // Place order → create in DB → open WhatsApp
@@ -49,12 +50,28 @@ export function CartDrawer() {
     setPlacing(true);
 
     try {
+      // Fetch default address for the order snapshot (if any)
+      let address = null;
+      if (user) {
+        const supabase = createClient();
+        const { data } = await supabase
+          .from("addresses")
+          .select("*")
+          .eq("user_id", user.id)
+          .eq("is_default", true)
+          .maybeSingle();
+        address = data;
+      }
+
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          customerName: profile?.full_name || "Customer",
+          customerName:
+            profile?.full_name || user?.email?.split("@")[0] || "Customer",
           customerPhone: profile?.phone || null,
+          city: address?.city || null,
+          addressSnapshot: address || null,
           channel: "whatsapp",
         }),
       });
@@ -67,22 +84,25 @@ export function CartDrawer() {
         return;
       }
 
-      // Build WhatsApp message with order ref
-      const waUrl = getWhatsAppCheckoutUrl(WHATSAPP_NUMBER);
-      const refMessage = waUrl.includes("?text=")
-        ? waUrl.replace(
-            "Assalamualaikum!",
-            `Assalamualaikum! Order ref: *${data.ref}*\n`
-          )
-        : waUrl;
+      // Build WhatsApp URL with order ref (message encoded once, in context)
+      const waUrl = getWhatsAppCheckoutUrl(whatsappNumber, data.ref);
 
       // Refresh cart (now empty) and close drawer
       await refreshCart();
       closeCart();
       toast.success(`Order ${data.ref} placed`);
 
-      // Open WhatsApp
-      window.open(refMessage, "_blank");
+      // Open WhatsApp — Safari/iOS may block window.open after awaits
+      const popup = window.open(waUrl, "_blank");
+      if (!popup) {
+        toast(`Order ${data.ref} is ready to send`, {
+          action: {
+            label: "Open WhatsApp",
+            onClick: () => window.open(waUrl, "_blank"),
+          },
+          duration: 60000,
+        });
+      }
     } catch {
       toast.error("Something went wrong");
     } finally {
@@ -107,12 +127,12 @@ export function CartDrawer() {
 
   if (!cartOpen) return null;
 
-  const shippingRemaining = Math.max(0, FREE_SHIPPING_THRESHOLD - subtotal);
-  const freeShippingUnlocked = subtotal >= FREE_SHIPPING_THRESHOLD;
-  const shippingProgress = Math.min(
-    100,
-    (subtotal / FREE_SHIPPING_THRESHOLD) * 100
-  );
+  const hasFreeShipping = freeShippingThreshold != null && freeShippingThreshold > 0;
+  const shippingRemaining = hasFreeShipping ? Math.max(0, freeShippingThreshold - subtotal) : 0;
+  const freeShippingUnlocked = hasFreeShipping && subtotal >= freeShippingThreshold;
+  const shippingProgress = hasFreeShipping
+    ? Math.min(100, (subtotal / freeShippingThreshold) * 100)
+    : 0;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 190 }}>
@@ -197,7 +217,7 @@ export function CartDrawer() {
         </div>
 
         {/* Free shipping meter */}
-        {items.length > 0 && (
+        {items.length > 0 && hasFreeShipping && (
           <div
             style={{
               padding: "12px 22px",

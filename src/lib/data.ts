@@ -117,6 +117,9 @@ export async function getSettings() {
     address: string;
     currency: string;
     social_links: { instagram?: string; facebook?: string };
+    flat_rate: number | null;
+    free_shipping_threshold: number | null;
+    announcement_text: string | null;
   } | null;
 }
 
@@ -143,6 +146,9 @@ function mapProduct(row: any): Product {
       fiber: "0g",
     },
     tags: row.tags || [],
+    grade: row.grade || null,
+    lab_report_url: row.lab_report_url || null,
+    stock: row.stock ?? null,
     is_featured: row.is_featured,
     is_available: row.is_available,
     created_at: row.created_at,
@@ -157,6 +163,23 @@ export async function getApprovedTestimonials(limit = 100): Promise<import("@/ty
     .from("testimonials")
     .select("*")
     .eq("status", "approved")
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+  return data;
+}
+
+export async function getProductTestimonials(
+  productId: string,
+  limit = 10
+): Promise<import("@/types").Testimonial[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("testimonials")
+    .select("*")
+    .eq("status", "approved")
+    .eq("product_id", productId)
     .order("created_at", { ascending: false })
     .limit(limit);
 

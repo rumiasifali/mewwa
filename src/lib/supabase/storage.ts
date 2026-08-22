@@ -1,16 +1,20 @@
 import { createClient } from "@/lib/supabase/client";
 
 /**
- * Extracts the file path from a Supabase Storage URL
+ * Extracts the file path (relative to the bucket) from a Supabase
+ * Storage URL.
  * Example: https://xxx.supabase.co/storage/v1/object/public/product-images/1234-abc.jpg
  * Returns: 1234-abc.jpg
  */
-export function extractFilePathFromUrl(url: string): string | null {
+export function extractFilePathFromUrl(
+  url: string,
+  bucket: string = "product-images"
+): string | null {
   try {
     const urlObj = new URL(url);
-    const pathParts = urlObj.pathname.split("/object/public/");
-    if (pathParts.length === 2) {
-      return pathParts[1];
+    const pathParts = urlObj.pathname.split(`/object/public/${bucket}/`);
+    if (pathParts.length === 2 && pathParts[1]) {
+      return decodeURIComponent(pathParts[1]);
     }
     return null;
   } catch {
@@ -27,7 +31,7 @@ export async function deleteImageFromUrl(
 ): Promise<boolean> {
   if (!imageUrl) return false;
 
-  const filePath = extractFilePathFromUrl(imageUrl);
+  const filePath = extractFilePathFromUrl(imageUrl, bucket);
   if (!filePath) return false;
 
   try {
@@ -55,7 +59,7 @@ export async function deleteImagesFromUrls(
   if (imageUrls.length === 0) return true;
 
   const filePaths = imageUrls
-    .map((url) => extractFilePathFromUrl(url))
+    .map((url) => extractFilePathFromUrl(url, bucket))
     .filter((path): path is string => path !== null);
 
   if (filePaths.length === 0) return false;

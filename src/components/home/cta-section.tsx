@@ -2,8 +2,10 @@
 
 import Link from "next/link";
 import { motion } from "@/components/shared/motion";
+import { useSiteSettings } from "@/contexts/site-settings-context";
 
 export function CTASection() {
+  const { whatsappNumber } = useSiteSettings();
   return (
     <section style={{ maxWidth: "1400px", margin: "0 auto", padding: "96px 28px 110px" }}>
       <motion.div
@@ -63,7 +65,7 @@ export function CTASection() {
           </p>
           <div className="mt-[34px] flex flex-wrap gap-3">
             <a
-              href="https://wa.me/923001234567"
+              href={`https://wa.me/${whatsappNumber}`}
               target="_blank"
               rel="noopener noreferrer"
               className="qaaq-press inline-flex items-center gap-[10px]"

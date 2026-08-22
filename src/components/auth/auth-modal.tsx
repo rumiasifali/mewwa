@@ -33,7 +33,9 @@ export function AuthModal() {
   const [keepSignedIn, setKeepSignedIn] = useState(true);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [sentEmail, setSentEmail] = useState("");
+  const [sentKind, setSentKind] = useState<"reset" | "confirm">("reset");
 
   const supabase = createClient();
 
@@ -86,10 +88,14 @@ export function AuthModal() {
       setError("Password must be at least 8 characters.");
       return;
     }
+    if (!/\d/.test(password)) {
+      setError("Password must include at least one number.");
+      return;
+    }
 
     setLoading(true);
 
-    const { error: err } = await supabase.auth.signUp({
+    const { data, error: err } = await supabase.auth.signUp({
       email,
       password,
       options: {
@@ -106,6 +112,16 @@ export function AuthModal() {
       return;
     }
 
+    if (!data.session) {
+      // Email confirmation is enabled — no session until the user
+      // confirms. Show the "check your inbox" view instead of closing.
+      setSentEmail(email);
+      setSentKind("confirm");
+      resetForm();
+      switchView("sent");
+      return;
+    }
+
     resetForm();
     closeAuthModal();
   };
@@ -113,12 +129,18 @@ export function AuthModal() {
   // ── Google OAuth ──
   const handleGoogle = async () => {
     setError("");
-    await supabase.auth.signInWithOAuth({
+    setGoogleLoading(true);
+    const { error: err } = await supabase.auth.signInWithOAuth({
       provider: "google",
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
+    if (err) {
+      setError(err.message);
+      setGoogleLoading(false);
+    }
+    // On success the browser redirects to Google — keep the loading state.
   };
 
   // ── Forgot Password ──
@@ -138,6 +160,7 @@ export function AuthModal() {
     }
 
     setSentEmail(email);
+    setSentKind("reset");
     setLoading(false);
     switchView("sent");
   };
@@ -276,11 +299,12 @@ export function AuthModal() {
               <button
                 type="button"
                 onClick={handleGoogle}
+                disabled={googleLoading}
                 className="qaaq-press"
-                style={googleButtonStyle}
+                style={googleButtonStyle(googleLoading)}
               >
                 <GoogleIcon />
-                Continue with Google
+                {googleLoading ? "Connecting..." : "Continue with Google"}
               </button>
 
               {/* Divider */}
@@ -614,11 +638,12 @@ export function AuthModal() {
               <button
                 type="button"
                 onClick={handleGoogle}
+                disabled={googleLoading}
                 className="qaaq-press"
-                style={googleButtonStyle}
+                style={googleButtonStyle(googleLoading)}
               >
                 <GoogleIcon />
-                Continue with Google
+                {googleLoading ? "Connecting..." : "Continue with Google"}
               </button>
 
               <p
@@ -790,14 +815,24 @@ export function AuthModal() {
                     lineHeight: 1.65,
                   }}
                 >
-                  We&apos;ve sent a password reset link to{" "}
-                  <strong>{sentEmail}</strong>. It expires in 60 minutes.
+                  {sentKind === "confirm" ? (
+                    <>
+                      We&apos;ve sent a confirmation link to{" "}
+                      <strong>{sentEmail}</strong>. Check your inbox to confirm
+                      your email, then sign in.
+                    </>
+                  ) : (
+                    <>
+                      We&apos;ve sent a password reset link to{" "}
+                      <strong>{sentEmail}</strong>. It expires in 60 minutes.
+                    </>
+                  )}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => {
-                  switchView("forgot");
+                  switchView(sentKind === "confirm" ? "signup" : "forgot");
                   setEmail(sentEmail);
                 }}
                 style={{
@@ -872,21 +907,21 @@ const primaryButtonStyle = (disabled: boolean): React.CSSProperties => ({
   fontFamily: "inherit",
 });
 
-const googleButtonStyle: React.CSSProperties = {
+const googleButtonStyle = (disabled: boolean): React.CSSProperties => ({
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
   gap: 10,
   height: 48,
   background: "#fff",
-  color: "#1A1512",
+  color: disabled ? "#9A9086" : "#1A1512",
   fontSize: 14.5,
   fontWeight: 600,
   borderRadius: 2,
   border: "1px solid #DCD3C5",
-  cursor: "pointer",
+  cursor: disabled ? "not-allowed" : "pointer",
   fontFamily: "inherit",
-};
+});
 
 function GoogleIcon() {
   return (

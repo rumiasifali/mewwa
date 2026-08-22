@@ -11,6 +11,9 @@ export interface Product {
   weights: WeightOption[];
   nutrition: NutritionInfo;
   tags: string[];
+  grade?: string | null;
+  lab_report_url?: string | null;
+  stock?: number | null;
   is_featured: boolean;
   is_available: boolean;
   created_at: string;

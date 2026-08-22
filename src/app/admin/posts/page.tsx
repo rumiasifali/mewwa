@@ -17,6 +17,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { Plus, Pencil, Trash2, Loader2, X } from "lucide-react";
+import { toast } from "sonner";
 import { ImageUpload } from "@/components/admin/image-upload";
 import { RichEditor } from "@/components/admin/rich-editor";
 
@@ -47,8 +48,8 @@ interface Post {
   content: string;
   cover_image: string;
   published: boolean;
+  published_at: string | null;
   created_at: string;
-  category?: string;
 }
 
 export default function AdminPostsPage() {
@@ -79,7 +80,10 @@ export default function AdminPostsPage() {
   }, [supabase]);
 
   useEffect(() => {
-    fetchData();
+    const load = async () => {
+      await fetchData();
+    };
+    void load();
   }, [fetchData]);
 
   function generateSlug(title: string) {
@@ -121,21 +125,32 @@ export default function AdminPostsPage() {
     const data = {
       ...form,
       slug: form.slug || generateSlug(form.title),
-      published_at: form.published ? new Date().toISOString() : null,
+      // Only stamp published_at on the transition to published;
+      // preserve the original timestamp for already-published posts.
+      published_at: form.published
+        ? editing?.published_at ?? new Date().toISOString()
+        : null,
     };
+
+    const { error } = editing
+      ? await supabase.from("posts").update(data).eq("id", editing.id)
+      : await supabase.from("posts").insert(data);
+
+    setSaving(false);
+    if (error) {
+      toast.error(
+        error.code === "23505"
+          ? "A post with this slug already exists"
+          : `Could not save post: ${error.message}`
+      );
+      return;
+    }
 
     // If updating and cover image changed, delete old image
     if (editing && editing.cover_image !== form.cover_image && editing.cover_image) {
       await deleteImageFromUrl(editing.cover_image);
     }
 
-    if (editing) {
-      await supabase.from("posts").update(data).eq("id", editing.id);
-    } else {
-      await supabase.from("posts").insert(data);
-    }
-
-    setSaving(false);
     setDialogOpen(false);
     fetchData();
   }
@@ -143,12 +158,17 @@ export default function AdminPostsPage() {
   async function handleDelete() {
     if (!editing) return;
 
-    // Delete cover image if exists
+    const { error } = await supabase.from("posts").delete().eq("id", editing.id);
+    if (error) {
+      toast.error(`Could not delete post: ${error.message}`);
+      return;
+    }
+
+    // Delete cover image only after the row is gone
     if (editing.cover_image) {
       await deleteImageFromUrl(editing.cover_image);
     }
 
-    await supabase.from("posts").delete().eq("id", editing.id);
     setDeleteDialogOpen(false);
     setEditing(null);
     fetchData();
@@ -326,7 +346,7 @@ export default function AdminPostsPage() {
           >
             <span />
             <span style={colHead}>Post</span>
-            <span style={colHead}>Category</span>
+            <span style={colHead}>Excerpt</span>
             <span style={colHead}>Date</span>
             <span style={colHead}>Status</span>
             <span />
@@ -408,14 +428,17 @@ export default function AdminPostsPage() {
                 </div>
               </div>
 
-              {/* Category */}
+              {/* Excerpt */}
               <span
                 style={{
                   fontSize: 12,
                   color: C.body,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
                 }}
               >
-                {(post as Post & { category?: string }).category || "Blog"}
+                {post.excerpt || "—"}
               </span>
 
               {/* Date */}

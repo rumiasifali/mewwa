@@ -1,6 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/admin-guard";
 import type { Testimonial } from "@/types";
 
 export interface MatchedOrder {
@@ -17,6 +18,7 @@ export interface TestimonialWithOrder extends Testimonial {
 }
 
 export async function getTestimonials(): Promise<TestimonialWithOrder[]> {
+  if (!(await requireAdmin())) return [];
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("testimonials")
@@ -28,7 +30,7 @@ export async function getTestimonials(): Promise<TestimonialWithOrder[]> {
   // Collect unique emails to look up matching orders
   const emails = [...new Set(data.map((t: Testimonial) => t.email).filter(Boolean))];
 
-  let ordersByEmail: Record<string, MatchedOrder> = {};
+  const ordersByEmail: Record<string, MatchedOrder> = {};
 
   if (emails.length > 0) {
     const { data: orders } = await supabase
@@ -58,7 +60,7 @@ export async function getTestimonials(): Promise<TestimonialWithOrder[]> {
     ...new Set(data.map((t: Testimonial) => t.product_id).filter(Boolean)),
   ] as string[];
 
-  let productsById: Record<string, string> = {};
+  const productsById: Record<string, string> = {};
 
   if (productIds.length > 0) {
     const { data: products } = await supabase
@@ -84,6 +86,7 @@ export async function updateTestimonialStatusAction(
   id: string,
   status: "approved" | "rejected"
 ): Promise<boolean> {
+  if (!(await requireAdmin())) return false;
   const supabase = await createClient();
   const { error } = await supabase
     .from("testimonials")
@@ -94,6 +97,7 @@ export async function updateTestimonialStatusAction(
 }
 
 export async function deleteTestimonialAction(id: string): Promise<boolean> {
+  if (!(await requireAdmin())) return false;
   const supabase = await createClient();
   const { error } = await supabase
     .from("testimonials")

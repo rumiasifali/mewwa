@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
 import { toast } from "sonner";
@@ -40,12 +40,16 @@ export default function SettingsPage() {
   // Delete account
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  useEffect(() => {
+  // Sync form fields from the async-loaded profile using the
+  // render-time state adjustment pattern (avoids an extra effect pass).
+  const [syncedProfile, setSyncedProfile] = useState(profile);
+  if (profile !== syncedProfile) {
+    setSyncedProfile(profile);
     if (profile) {
       setFullName(profile.full_name || "");
       setPhone(profile.phone || "");
     }
-  }, [profile]);
+  }
 
   const handleProfileSave = async () => {
     if (!user) return;

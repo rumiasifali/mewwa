@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { getProducts, getApprovedTestimonials } from "@/lib/data";
 
 export const metadata: Metadata = {
   title: "Origins — QAAQ",
@@ -16,13 +17,6 @@ const muted = "#7C7268";
 const placeholder = "#F0EBE3";
 
 /* ─── data ─── */
-const stats = [
-  { value: "5", label: "Valleys" },
-  { value: "12+", label: "Products" },
-  { value: "48h", label: "Pack to ship" },
-  { value: "4.8\u2605", label: "Average rating" },
-];
-
 const steps = [
   {
     when: "Week 1",
@@ -91,7 +85,25 @@ const eyebrowStyle: React.CSSProperties = {
   fontWeight: 700,
 };
 
-export default function AboutPage() {
+export default async function AboutPage() {
+  const [products, testimonials] = await Promise.all([
+    getProducts(),
+    getApprovedTestimonials(),
+  ]);
+
+  const stats = [
+    { value: "5", label: "Valleys" },
+    { value: `${products.length}`, label: "Products" },
+    { value: "48h", label: "Pack to ship" },
+  ];
+
+  if (testimonials.length > 0) {
+    const average = (
+      testimonials.reduce((sum, t) => sum + t.rating, 0) / testimonials.length
+    ).toFixed(1);
+    stats.push({ value: `${average}★`, label: "Average rating" });
+  }
+
   return (
     <div style={{ background: paper }}>
       {/* ───────────── 1. Text-first hero ───────────── */}
@@ -154,7 +166,7 @@ export default function AboutPage() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            gridTemplateColumns: `repeat(${stats.length}, 1fr)`,
             gap: 1,
             background: line,
             borderBottom: `1px solid ${line}`,

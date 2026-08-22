@@ -7,6 +7,11 @@ import type { Testimonial } from "@/types";
 export function Testimonials({ testimonials }: { testimonials: Testimonial[] }) {
   if (testimonials.length === 0) return null;
 
+  const count = testimonials.length;
+  const average = (
+    testimonials.reduce((sum, t) => sum + t.rating, 0) / count
+  ).toFixed(1);
+
   // Duplicate for seamless marquee
   const items = [...testimonials, ...testimonials];
 
@@ -29,7 +34,7 @@ export function Testimonials({ testimonials }: { testimonials: Testimonial[] }) 
                 fontWeight: 800,
               }}
             >
-              4.8 from 621 verified orders
+              {average} from {count} review{count === 1 ? "" : "s"}
             </h2>
           </div>
           <Link
@@ -82,18 +87,6 @@ export function Testimonials({ testimonials }: { testimonials: Testimonial[] }) 
                     }}
                   />
                 ))}
-                <span
-                  style={{
-                    fontSize: "10.5px",
-                    letterSpacing: ".14em",
-                    textTransform: "uppercase",
-                    color: "#6E7F4E",
-                    fontWeight: 700,
-                    marginLeft: "8px",
-                  }}
-                >
-                  Verified
-                </span>
               </div>
 
               {/* Review text */}

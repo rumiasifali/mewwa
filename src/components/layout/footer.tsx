@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { SITE_CONFIG } from "@/lib/constants";
+import { SITE_CONFIG, WHATSAPP_NUMBER } from "@/lib/constants";
 
 const footerLinks = {
   shop: [
@@ -16,7 +16,6 @@ const footerLinks = {
     { label: "Leave a review", href: "/feedback" },
   ],
   orders: [
-    { label: "Your bag", href: "/cart" },
     { label: "Track an order", href: "/contact" },
     { label: "Build a gift box", href: "/products?category=gift-boxes" },
     { label: "Shipping & delivery", href: "/shipping" },
@@ -29,13 +28,16 @@ const footerLinks = {
   ],
 };
 
-const socialIcons = [
-  { label: "IG", href: SITE_CONFIG.social.instagram },
-  { label: "FB", href: SITE_CONFIG.social.facebook },
-  { label: "WA", href: "https://wa.me/923001234567" },
-];
-
-export function Footer() {
+export function Footer({
+  whatsappNumber = WHATSAPP_NUMBER,
+}: {
+  whatsappNumber?: string;
+}) {
+  const socialIcons = [
+    { label: "IG", href: SITE_CONFIG.social.instagram },
+    { label: "FB", href: SITE_CONFIG.social.facebook },
+    { label: "WA", href: `https://wa.me/${whatsappNumber}` },
+  ];
   return (
     <footer style={{ background: "#1A1512", color: "#EDE7DC" }}>
       {/* Main footer */}

@@ -6,45 +6,10 @@ import Image from "next/image";
 import { MapPin, Star, Shield, Plus } from "lucide-react";
 import { formatPrice, getWhatsAppLink } from "@/lib/constants";
 import { motion, AnimatedSection } from "@/components/shared/motion";
-import { useAuth } from "@/contexts/auth-context";
 import { useCart } from "@/contexts/cart-context";
+import { useSiteSettings } from "@/contexts/site-settings-context";
 import { toast } from "sonner";
-import type { Product } from "@/types";
-
-/* ───── mock data for sections not yet in the DB ───── */
-
-const MOCK_REVIEWS = [
-  {
-    id: 1,
-    name: "Hamza K.",
-    city: "Islamabad",
-    rating: 5,
-    text: "Best almonds I have ever tasted. You can really tell the difference from the store-bought stuff. Will order again.",
-  },
-  {
-    id: 2,
-    name: "Ayesha R.",
-    city: "Lahore",
-    rating: 5,
-    text: "The packaging was beautiful and the quality was outstanding. Sent these as a gift and got so many compliments.",
-  },
-  {
-    id: 3,
-    name: "Omar S.",
-    city: "Karachi",
-    rating: 4,
-    text: "Fresh, crunchy and flavourful. Delivery was quick too. Only giving 4 stars because I wanted a bigger bag option.",
-  },
-  {
-    id: 4,
-    name: "Fatima A.",
-    city: "Peshawar",
-    rating: 5,
-    text: "The cashews were perfectly roasted. My family finished the whole pack in two days. Ordering the 1 kg bag next.",
-  },
-];
-
-const RATING_DISTRIBUTION = [68, 20, 8, 3, 1]; // 5★ → 1★ percentages
+import type { Product, Testimonial } from "@/types";
 
 const STORAGE_TIPS = [
   "Store in a cool, dry place away from direct sunlight and strong odours.",
@@ -53,8 +18,7 @@ const STORAGE_TIPS = [
   "Avoid storing near heat sources such as stoves or ovens.",
 ];
 
-const ASSURANCE_ITEMS = [
-  { text: "Single-origin, lab report available", meta: "View report" },
+const ASSURANCE_ITEMS: { text: string; meta: string; href?: string }[] = [
   { text: "Packed to order — not off a shelf", meta: "Same-day dispatch" },
   { text: "Free shipping over PKR 5,000", meta: "All Pakistan" },
   { text: "Vacuum sealed, nitrogen flushed", meta: "Max freshness" },
@@ -88,9 +52,11 @@ function WhatsAppIcon({ size = 20, color = "#fff" }: { size?: number; color?: st
 export function ProductDetail({
   product,
   related,
+  testimonials,
 }: {
   product: Product;
   related: Product[];
+  testimonials: Testimonial[];
 }) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [activeTab, setActiveTab] = useState<
@@ -120,6 +86,36 @@ export function ProductDetail({
 
   const tabs = ["Nutrition", "Origin", "Storage", "Shipping"] as const;
   const tabKeys = ["nutrition", "origin", "storage", "shipping"] as const;
+
+  // Real review stats from approved testimonials
+  const reviewCount = testimonials.length;
+  const averageRating =
+    reviewCount > 0
+      ? (
+          testimonials.reduce((sum, t) => sum + t.rating, 0) / reviewCount
+        ).toFixed(1)
+      : null;
+  const starCounts = [5, 4, 3, 2, 1].map(
+    (star) => testimonials.filter((t) => t.rating === star).length
+  );
+
+  const provenanceRows = [
+    { label: "Region", value: product.origin },
+    ...(product.grade ? [{ label: "Grade", value: product.grade }] : []),
+  ];
+
+  const assuranceItems = [
+    ...(product.lab_report_url
+      ? [
+          {
+            text: "Single-origin, lab report available",
+            meta: "View report",
+            href: product.lab_report_url,
+          },
+        ]
+      : []),
+    ...ASSURANCE_ITEMS,
+  ];
 
   return (
     <div style={{ paddingTop: 100 }}>
@@ -219,7 +215,7 @@ export function ProductDetail({
                   {tag}
                 </span>
               ))}
-              {product.nutrition?.serving_size && (
+              {product.grade && (
                 <span
                   style={{
                     background: "rgba(251,249,245,.94)",
@@ -232,7 +228,7 @@ export function ProductDetail({
                     display: "inline-block",
                   }}
                 >
-                  Premium Grade
+                  {product.grade}
                 </span>
               )}
             </div>
@@ -481,12 +477,7 @@ export function ProductDetail({
                       quality-checked before it reaches you.
                     </p>
                     <div style={{ marginTop: 20 }}>
-                    {[
-                      { label: "Region", value: product.origin },
-                      { label: "Altitude", value: "1,200 – 2,400m" },
-                      { label: "Harvest", value: "September – November" },
-                      { label: "Grade", value: "Premium A" },
-                    ].map((row) => (
+                    {provenanceRows.map((row) => (
                       <div
                         key={row.label}
                         style={{
@@ -691,29 +682,40 @@ export function ProductDetail({
           </h1>
 
           {/* Rating row */}
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 12,
-              marginTop: 14,
-            }}
-          >
-            <div style={{ display: "flex", gap: 3 }}>
-              {[1, 2, 3, 4, 5].map((n) => (
-                <Star
-                  key={n}
-                  size={13}
-                  fill="#C8922E"
-                  stroke="#C8922E"
-                  strokeWidth={0}
-                />
-              ))}
+          {reviewCount > 0 && averageRating && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+                marginTop: 14,
+              }}
+            >
+              <div style={{ display: "flex", gap: 3 }}>
+                {[1, 2, 3, 4, 5].map((n) => (
+                  <Star
+                    key={n}
+                    size={13}
+                    fill={
+                      n <= Math.round(Number(averageRating))
+                        ? "#C8922E"
+                        : "#E7E1D7"
+                    }
+                    stroke={
+                      n <= Math.round(Number(averageRating))
+                        ? "#C8922E"
+                        : "#E7E1D7"
+                    }
+                    strokeWidth={0}
+                  />
+                ))}
+              </div>
+              <span style={{ fontSize: 13, color: "#4A4139" }}>
+                <strong>{averageRating}</strong> &middot; {reviewCount} review
+                {reviewCount === 1 ? "" : "s"}
+              </span>
             </div>
-            <span style={{ fontSize: 13, color: "#4A4139" }}>
-              <strong>4.8</strong> &middot; 24 verified reviews
-            </span>
-          </div>
+          )}
 
           {/* Description */}
           <p
@@ -889,7 +891,7 @@ export function ProductDetail({
               background: "#fff",
             }}
           >
-            {ASSURANCE_ITEMS.map((item, i) => (
+            {assuranceItems.map((item, i) => (
               <div
                 key={i}
                 style={{
@@ -898,7 +900,7 @@ export function ProductDetail({
                   gap: 11,
                   padding: "13px 16px",
                   borderBottom:
-                    i < ASSURANCE_ITEMS.length - 1
+                    i < assuranceItems.length - 1
                       ? "1px solid #F0EBE3"
                       : "none",
                 }}
@@ -915,16 +917,36 @@ export function ProductDetail({
                 <span style={{ fontSize: 13, color: "#3A332C" }}>
                   {item.text}
                 </span>
-                <span
-                  style={{
-                    fontSize: 11.5,
-                    color: "#9A9086",
-                    marginLeft: "auto",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {item.meta}
-                </span>
+                {item.href ? (
+                  <a
+                    href={item.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{
+                      fontSize: 11.5,
+                      color: "#1A1512",
+                      fontWeight: 600,
+                      marginLeft: "auto",
+                      whiteSpace: "nowrap",
+                      borderBottom: "1px solid #C8922E",
+                      textDecoration: "none",
+                      paddingBottom: 1,
+                    }}
+                  >
+                    {item.meta}
+                  </a>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: 11.5,
+                      color: "#9A9086",
+                      marginLeft: "auto",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    {item.meta}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -963,88 +985,96 @@ export function ProductDetail({
               >
                 Reviews
               </h2>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "baseline",
-                  gap: 10,
-                  marginTop: 18,
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: 52,
-                    fontWeight: 800,
-                    color: "#1A1512",
-                    letterSpacing: "-.04em",
-                    lineHeight: 1,
-                  }}
-                >
-                  4.8
-                </span>
-                <span style={{ fontSize: 14, color: "#7C7268" }}>
-                  / 5 &middot; 24 reviews
-                </span>
-              </div>
 
-              {/* Rating bars */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: 8,
-                  marginBottom: 24,
-                }}
-              >
-                {RATING_DISTRIBUTION.map((pct, i) => (
+              {reviewCount > 0 && averageRating && (
+                <>
                   <div
-                    key={i}
                     style={{
                       display: "flex",
-                      alignItems: "center",
+                      alignItems: "baseline",
                       gap: 10,
+                      marginTop: 18,
                     }}
                   >
                     <span
                       style={{
-                        fontSize: 12,
-                        color: "#7C7268",
-                        width: 10,
+                        fontSize: 52,
+                        fontWeight: 800,
+                        color: "#1A1512",
+                        letterSpacing: "-.04em",
+                        lineHeight: 1,
                       }}
                     >
-                      {5 - i}
+                      {averageRating}
                     </span>
-                    <div
-                      style={{
-                        flex: 1,
-                        height: 4,
-                        background: "#E7E1D7",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: `${pct}%`,
-                          height: "100%",
-                          background: "#1A1512",
-                        }}
-                      />
-                    </div>
-                    <span
-                      style={{
-                        fontSize: 11,
-                        color: "#B0A69A",
-                        width: 26,
-                        textAlign: "right",
-                      }}
-                    >
-                      {Math.round((pct / 100) * 24)}
+                    <span style={{ fontSize: 14, color: "#7C7268" }}>
+                      / 5 &middot; {reviewCount} review
+                      {reviewCount === 1 ? "" : "s"}
                     </span>
                   </div>
-                ))}
-              </div>
 
-              <button
+                  {/* Rating bars */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 8,
+                      marginTop: 20,
+                      marginBottom: 24,
+                    }}
+                  >
+                    {starCounts.map((count, i) => (
+                      <div
+                        key={i}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 10,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontSize: 12,
+                            color: "#7C7268",
+                            width: 10,
+                          }}
+                        >
+                          {5 - i}
+                        </span>
+                        <div
+                          style={{
+                            flex: 1,
+                            height: 4,
+                            background: "#E7E1D7",
+                            overflow: "hidden",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: `${(count / reviewCount) * 100}%`,
+                              height: "100%",
+                              background: "#1A1512",
+                            }}
+                          />
+                        </div>
+                        <span
+                          style={{
+                            fontSize: 11,
+                            color: "#B0A69A",
+                            width: 26,
+                            textAlign: "right",
+                          }}
+                        >
+                          {count}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+
+              <Link
+                href="/feedback"
                 style={{
                   display: "inline-flex",
                   alignItems: "center",
@@ -1057,83 +1087,148 @@ export function ProductDetail({
                   fontWeight: 600,
                   color: "#1A1512",
                   background: "#fff",
-                  cursor: "pointer",
+                  textDecoration: "none",
                   fontFamily: "var(--font-sans)",
+                  marginTop: reviewCount > 0 ? 0 : 18,
                 }}
               >
                 Write a review
-              </button>
+              </Link>
             </div>
 
             {/* Right — review cards */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: 1,
-                background: "#E7E1D7",
-                border: "1px solid #E7E1D7",
-              }}
-              className="qaaq-review-cards-grid"
-            >
-              {MOCK_REVIEWS.map((review) => (
-                <div
-                  key={review.id}
-                  style={{
-                    background: "#FBF9F5",
-                    padding: 24,
-                  }}
-                >
+            {reviewCount > 0 ? (
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr",
+                  gap: 1,
+                  background: "#E7E1D7",
+                  border: "1px solid #E7E1D7",
+                }}
+                className="qaaq-review-cards-grid"
+              >
+                {testimonials.map((review) => (
                   <div
+                    key={review.id}
                     style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 4,
+                      background: "#FBF9F5",
+                      padding: 24,
                     }}
                   >
-                    {[1, 2, 3, 4, 5].map((n) => (
-                      <Star
-                        key={n}
-                        size={12}
-                        fill={n <= review.rating ? "#C8922E" : "#E7E1D7"}
-                        stroke={n <= review.rating ? "#C8922E" : "#E7E1D7"}
-                        strokeWidth={0}
-                      />
-                    ))}
-                    <span
+                    <div
                       style={{
-                        marginLeft: 8,
-                        fontSize: 10,
-                        fontWeight: 700,
-                        letterSpacing: ".14em",
-                        textTransform: "uppercase",
-                        color: "#6E7F4E",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 4,
                       }}
                     >
-                      Verified order
-                    </span>
-                  </div>
-                  <p
-                    style={{
-                      fontSize: 14.5,
-                      lineHeight: 1.65,
-                      color: "#2E2721",
-                      margin: "14px 0 0",
-                    }}
-                  >
-                    {review.text}
-                  </p>
-                  <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <span style={{ fontSize: 12.5, fontWeight: 600, color: "#1A1512" }}>
-                      {review.name}{" "}
-                      <span style={{ color: "#9A9086", fontWeight: 400 }}>
-                        &middot; {review.city}
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star
+                          key={n}
+                          size={12}
+                          fill={n <= review.rating ? "#C8922E" : "#E7E1D7"}
+                          stroke={n <= review.rating ? "#C8922E" : "#E7E1D7"}
+                          strokeWidth={0}
+                        />
+                      ))}
+                    </div>
+                    <p
+                      style={{
+                        fontSize: 14.5,
+                        lineHeight: 1.65,
+                        color: "#2E2721",
+                        margin: "14px 0 0",
+                      }}
+                    >
+                      {review.content}
+                    </p>
+                    <div style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 600, color: "#1A1512" }}>
+                        {review.name}
+                        {review.location && (
+                          <span style={{ color: "#9A9086", fontWeight: 400 }}>
+                            {" "}
+                            &middot; {review.location}
+                          </span>
+                        )}
                       </span>
-                    </span>
+                      <span style={{ fontSize: 11.5, color: "#9A9086" }}>
+                        {new Date(review.created_at).toLocaleDateString(
+                          "en-US",
+                          {
+                            month: "short",
+                            year: "numeric",
+                            timeZone: "UTC",
+                          }
+                        )}
+                      </span>
+                    </div>
                   </div>
+                ))}
+              </div>
+            ) : (
+              <div
+                style={{
+                  border: "1px solid #E7E1D7",
+                  background: "#FBF9F5",
+                  padding: "48px 32px",
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  textAlign: "center",
+                }}
+              >
+                <div style={{ display: "flex", gap: 3 }}>
+                  {[1, 2, 3, 4, 5].map((n) => (
+                    <Star
+                      key={n}
+                      size={15}
+                      fill="#E7E1D7"
+                      stroke="#E7E1D7"
+                      strokeWidth={0}
+                    />
+                  ))}
                 </div>
-              ))}
-            </div>
+                <p
+                  style={{
+                    fontSize: 16,
+                    fontWeight: 650,
+                    color: "#1A1512",
+                    margin: "16px 0 0",
+                    letterSpacing: "-.02em",
+                  }}
+                >
+                  No reviews yet
+                </p>
+                <p
+                  style={{
+                    fontSize: 13.5,
+                    color: "#7C7268",
+                    margin: "6px 0 0",
+                    maxWidth: 320,
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Ordered this before? Be the first to tell others how it was.
+                </p>
+                <Link
+                  href="/feedback"
+                  style={{
+                    marginTop: 18,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    color: "#1A1512",
+                    textDecoration: "none",
+                    borderBottom: "1px solid #C8922E",
+                    paddingBottom: 2,
+                  }}
+                >
+                  Be the first to review
+                </Link>
+              </div>
+            )}
           </div>
         </section>
       </AnimatedSection>
@@ -1320,17 +1415,15 @@ function ProductOrderButtons({
   product: Product;
   currentWeight: Product["weights"][0] | undefined;
 }) {
-  const { user, openAuthModal } = useAuth();
-  const { addItem, openCart } = useCart();
+  const { requestAddItem, openCart } = useCart();
+  const { whatsappNumber } = useSiteSettings();
+  const isUnavailable = product.is_available === false;
 
   const handleAddToCart = () => {
-    if (!user) {
-      openAuthModal("login");
-      return;
-    }
+    if (isUnavailable) return;
     if (!currentWeight) return;
 
-    addItem({
+    const added = requestAddItem({
       productId: product.id,
       productName: product.name,
       productSlug: product.slug,
@@ -1341,6 +1434,7 @@ function ProductOrderButtons({
       price: currentWeight.price,
       currency: currentWeight.currency || "PKR",
     });
+    if (!added) return;
 
     toast("Added to your order", {
       description: `${product.name} — ${currentWeight.label}`,
@@ -1357,6 +1451,7 @@ function ProductOrderButtons({
       {/* Primary: Add to Cart */}
       <button
         onClick={handleAddToCart}
+        disabled={isUnavailable}
         className="qaaq-press"
         style={{
           display: "flex",
@@ -1364,25 +1459,31 @@ function ProductOrderButtons({
           justifyContent: "center",
           gap: 9,
           height: 56,
-          background: "#1A1512",
+          background: isUnavailable ? "#9A9086" : "#1A1512",
           color: "#fff",
           fontSize: 15.5,
           fontWeight: 600,
           borderRadius: 2,
           border: "none",
-          cursor: "pointer",
+          cursor: isUnavailable ? "not-allowed" : "pointer",
           fontFamily: "inherit",
           width: "100%",
         }}
       >
-        <Plus style={{ width: 16, height: 16 }} />
-        Add to Cart &mdash;{" "}
-        {currentWeight ? formatPrice(currentWeight.price) : ""}
+        {isUnavailable ? (
+          "Currently unavailable"
+        ) : (
+          <>
+            <Plus style={{ width: 16, height: 16 }} />
+            Add to Cart &mdash;{" "}
+            {currentWeight ? formatPrice(currentWeight.price) : ""}
+          </>
+        )}
       </button>
 
       {/* Secondary: WhatsApp */}
       <a
-        href={getWhatsAppLink(product, currentWeight?.label)}
+        href={getWhatsAppLink(product, currentWeight?.label, whatsappNumber)}
         target="_blank"
         rel="noopener noreferrer"
         className="qaaq-press"
@@ -1410,7 +1511,7 @@ function ProductOrderButtons({
       {/* Tertiary buttons */}
       <div style={{ display: "flex", gap: 9 }}>
         <a
-          href={getWhatsAppLink(product)}
+          href={getWhatsAppLink(product, undefined, whatsappNumber)}
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -1432,7 +1533,7 @@ function ProductOrderButtons({
           Ask a question
         </a>
         <a
-          href={getWhatsAppLink(product)}
+          href={getWhatsAppLink(product, undefined, whatsappNumber)}
           target="_blank"
           rel="noopener noreferrer"
           style={{

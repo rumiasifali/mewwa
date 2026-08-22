@@ -49,12 +49,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const fetchProfile = useCallback(
     async (userId: string) => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("*")
         .eq("id", userId)
-        .single();
-      setProfile(data);
+        .maybeSingle();
+
+      if (error) {
+        console.error("Failed to fetch profile:", error);
+        return;
+      }
+
+      if (data) {
+        setProfile(data);
+        return;
+      }
+
+      // Right after signup the DB trigger may not have created the
+      // profile row yet — retry once after a short delay.
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+      const { data: retryData, error: retryError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", userId)
+        .maybeSingle();
+
+      if (retryError) {
+        console.error("Failed to fetch profile (retry):", retryError);
+        return;
+      }
+      setProfile(retryData);
     },
     [supabase]
   );
@@ -90,14 +114,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const openAuthModal = useCallback((view: AuthView = "login") => {
+    setAuthView(view);
+    setAuthOpen(true);
+  }, []);
+
   // Check URL for ?auth=login param (from middleware redirect)
   useEffect(() => {
     if (typeof window === "undefined") return;
     const params = new URLSearchParams(window.location.search);
     const authParam = params.get("auth");
     if (authParam === "login" && !user && !loading) {
-      setAuthOpen(true);
-      setAuthView("login");
+      // Syncing FROM an external system (the URL set by the middleware
+      // redirect) into React state — a one-shot open, not a cascade.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      openAuthModal("login");
       // Clean up URL
       params.delete("auth");
       const newUrl =
@@ -105,12 +136,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         (params.toString() ? `?${params.toString()}` : "");
       window.history.replaceState({}, "", newUrl);
     }
-  }, [user, loading]);
-
-  const openAuthModal = useCallback((view: AuthView = "login") => {
-    setAuthView(view);
-    setAuthOpen(true);
-  }, []);
+  }, [user, loading, openAuthModal]);
 
   const closeAuthModal = useCallback(() => {
     setAuthOpen(false);
@@ -120,6 +146,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    // Don't leave the user stranded on a protected page.
+    if (
+      typeof window !== "undefined" &&
+      (window.location.pathname.startsWith("/account") ||
+        window.location.pathname.startsWith("/admin"))
+    ) {
+      window.location.href = "/";
+    }
   }, [supabase]);
 
   return (

@@ -5,7 +5,8 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { deleteImagesFromUrls } from "@/lib/supabase/storage";
-import { Loader2, Pencil, Trash2, Search, X, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+import { Loader2, Pencil, Trash2, Search, X, Plus } from "lucide-react";
+import { toast } from "sonner";
 import { ImageUpload } from "@/components/admin/image-upload";
 
 interface Category {
@@ -398,7 +399,7 @@ export default function AdminProductsPage() {
   /* Filters */
   const [filterCategory, setFilterCategory] = useState("");
   const [filterOrigin, setFilterOrigin] = useState("");
-  const [filterAvailability, setFilterAvailability] = useState("available");
+  const [filterAvailability, setFilterAvailability] = useState("");
   const [filterSort, setFilterSort] = useState("manual");
 
   /* Bulk selection */
@@ -421,7 +422,10 @@ export default function AdminProductsPage() {
   }, [supabase]);
 
   useEffect(() => {
-    fetchData();
+    const load = async () => {
+      await fetchData();
+    };
+    void load();
   }, [fetchData]);
 
   function openCreate() {
@@ -438,7 +442,7 @@ export default function AdminProductsPage() {
       slug: product.slug,
       description: product.description || "",
       origin: product.origin || "",
-      grade: (product as any).grade || "",
+      grade: product.grade || "",
       category_id: product.category_id,
       image_url: product.image_url || "",
       images: product.images || [],
@@ -447,12 +451,12 @@ export default function AdminProductsPage() {
       storage_instructions: product.storage_instructions || "",
       shelf_life: product.shelf_life || "",
       shipping_info: product.shipping_info || "",
-      lab_report_url: (product as any).lab_report_url || "",
+      lab_report_url: product.lab_report_url || "",
       tags: product.tags || [],
       is_featured: product.is_featured,
       is_available: product.is_available,
-      is_lab_tested: (product as any).is_lab_tested || false,
-      stock: (product as any).stock || 0,
+      is_lab_tested: product.is_lab_tested || false,
+      stock: product.stock || 0,
     });
     setTagInput("");
     setEditorOpen(true);
@@ -519,35 +523,47 @@ export default function AdminProductsPage() {
     const data = {
       ...form,
       slug: form.slug || generateSlug(form.name),
+      // Strip the client-only `live` key before persisting
+      weights: form.weights.map(({ live, ...w }) => w),
+      // Drop empty gallery slots
+      images: form.images.filter((img) => img !== ""),
+      stock:
+        form.stock == null || Number.isNaN(Number(form.stock))
+          ? null
+          : Number(form.stock),
     };
 
-    // If updating and main image changed, delete old image
-    if (editingProduct && editingProduct.image_url !== form.image_url) {
-      if (editingProduct.image_url) {
-        await deleteImagesFromUrls([editingProduct.image_url]);
-      }
+    const { error } = editingProduct
+      ? await supabase.from("products").update(data).eq("id", editingProduct.id)
+      : await supabase.from("products").insert(data);
+
+    setSaving(false);
+
+    if (error) {
+      toast.error(
+        error.code === "23505"
+          ? "A product with this slug already exists"
+          : `Could not save product: ${error.message}`
+      );
+      return;
     }
 
-    // Delete any gallery images that were removed
-    if (editingProduct && editingProduct.images?.length > 0) {
-      const removedImages = editingProduct.images.filter(
-        (img) => !form.images.includes(img)
-      );
+    // Storage cleanup only after the DB write succeeded
+    if (editingProduct) {
+      const removedImages: string[] = [];
+      if (editingProduct.image_url && editingProduct.image_url !== form.image_url) {
+        removedImages.push(editingProduct.image_url);
+      }
+      if (editingProduct.images?.length > 0) {
+        removedImages.push(
+          ...editingProduct.images.filter((img) => !form.images.includes(img))
+        );
+      }
       if (removedImages.length > 0) {
         await deleteImagesFromUrls(removedImages);
       }
     }
 
-    if (editingProduct) {
-      await supabase
-        .from("products")
-        .update(data)
-        .eq("id", editingProduct.id);
-    } else {
-      await supabase.from("products").insert(data);
-    }
-
-    setSaving(false);
     setEditorOpen(false);
     setEditingProduct(null);
     fetchData();
@@ -556,7 +572,17 @@ export default function AdminProductsPage() {
   async function handleDelete() {
     if (!editingProduct) return;
 
-    // Delete all images associated with this product
+    const { error } = await supabase
+      .from("products")
+      .delete()
+      .eq("id", editingProduct.id);
+
+    if (error) {
+      toast.error(`Could not delete product: ${error.message}`);
+      return;
+    }
+
+    // Delete associated images only after the DB delete succeeded
     const imagesToDelete: string[] = [];
     if (editingProduct.image_url) imagesToDelete.push(editingProduct.image_url);
     if (editingProduct.images?.length > 0) {
@@ -567,7 +593,6 @@ export default function AdminProductsPage() {
       await deleteImagesFromUrls(imagesToDelete);
     }
 
-    await supabase.from("products").delete().eq("id", editingProduct.id);
     setDeleteDialogOpen(false);
     setEditingProduct(null);
     setEditorOpen(false);
@@ -584,8 +609,13 @@ export default function AdminProductsPage() {
 
   async function bulkFeature() {
     const ids = Array.from(selected);
-    for (let i = 0; i < ids.length; i++) {
-      await supabase.from("products").update({ is_featured: true }).eq("id", ids[i]);
+    const { error } = await supabase
+      .from("products")
+      .update({ is_featured: true })
+      .in("id", ids);
+    if (error) {
+      toast.error(`Could not feature products: ${error.message}`);
+      return;
     }
     setSelected(new Set());
     fetchData();
@@ -593,8 +623,13 @@ export default function AdminProductsPage() {
 
   async function bulkUnlist() {
     const ids = Array.from(selected);
-    for (let i = 0; i < ids.length; i++) {
-      await supabase.from("products").update({ is_available: false }).eq("id", ids[i]);
+    const { error } = await supabase
+      .from("products")
+      .update({ is_available: false })
+      .in("id", ids);
+    if (error) {
+      toast.error(`Could not unlist products: ${error.message}`);
+      return;
     }
     setSelected(new Set());
     fetchData();
@@ -603,7 +638,23 @@ export default function AdminProductsPage() {
   async function bulkDelete() {
     if (selected.size === 0) return;
     const ids = Array.from(selected);
+    if (
+      !window.confirm(
+        `Delete ${ids.length} product${ids.length !== 1 ? "s" : ""}? This action cannot be undone.`
+      )
+    ) {
+      return;
+    }
+
     const toDelete = products.filter((p) => selected.has(p.id));
+
+    const { error } = await supabase.from("products").delete().in("id", ids);
+    if (error) {
+      toast.error(`Could not delete products: ${error.message}`);
+      return;
+    }
+
+    // Delete associated images only after the DB delete succeeded
     const allImages: string[] = [];
     for (const p of toDelete) {
       if (p.image_url) allImages.push(p.image_url);
@@ -612,9 +663,7 @@ export default function AdminProductsPage() {
     if (allImages.length > 0) {
       await deleteImagesFromUrls(allImages);
     }
-    for (let i = 0; i < ids.length; i++) {
-      await supabase.from("products").delete().eq("id", ids[i]);
-    }
+
     setSelected(new Set());
     fetchData();
   }
@@ -634,6 +683,15 @@ export default function AdminProductsPage() {
       (filterAvailability === "available" ? p.is_available : !p.is_available);
     return matchesSearch && matchesCat && matchesOrigin && matchesAvail;
   });
+
+  /* Sorting — "manual" keeps the query's sort_order */
+  if (filterSort === "name") {
+    filtered.sort((a, b) => a.name.localeCompare(b.name));
+  } else if (filterSort === "price") {
+    filtered.sort(
+      (a, b) => (a.weights?.[0]?.price ?? 0) - (b.weights?.[0]?.price ?? 0)
+    );
+  }
 
   /* Derive unique origins for dropdown */
   const uniqueOrigins = Array.from(new Set(products.map((p) => p.origin).filter(Boolean))).sort();
@@ -1617,12 +1675,11 @@ export default function AdminProductsPage() {
                       value={form.images[idx] || ""}
                       onChange={(url) => {
                         setForm((f) => {
+                          // Pad with "" so slots never shift or leave holes;
+                          // empty strings are filtered out on save
                           const newImages = [...f.images];
-                          if (url) {
-                            newImages[idx] = url;
-                          } else {
-                            newImages.splice(idx, 1);
-                          }
+                          while (newImages.length <= idx) newImages.push("");
+                          newImages[idx] = url || "";
                           return { ...f, images: newImages };
                         });
                       }}
@@ -2472,67 +2529,9 @@ export default function AdminProductsPage() {
                 color: T.muted,
               }}
             >
-              Showing all {filtered.length}{" "}
-              <span style={{ color: T.faint }}>· keyset paginated on sort_order</span>
+              Showing all {filtered.length} product
+              {filtered.length !== 1 ? "s" : ""}
             </span>
-            <div style={{ display: "flex", gap: 4 }}>
-              <button
-                type="button"
-                disabled
-                style={{
-                  width: 28,
-                  height: 28,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "none",
-                  border: `1px solid ${T.line}`,
-                  borderRadius: 2,
-                  cursor: "default",
-                  color: T.faint,
-                }}
-              >
-                <ChevronLeft style={{ width: 14, height: 14 }} />
-              </button>
-              <button
-                type="button"
-                style={{
-                  width: 28,
-                  height: 28,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: T.ink,
-                  border: "none",
-                  borderRadius: 2,
-                  cursor: "pointer",
-                  color: "#fff",
-                  fontSize: 11,
-                  fontWeight: 600,
-                  fontFamily: "inherit",
-                }}
-              >
-                1
-              </button>
-              <button
-                type="button"
-                disabled
-                style={{
-                  width: 28,
-                  height: 28,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  background: "none",
-                  border: `1px solid ${T.line}`,
-                  borderRadius: 2,
-                  cursor: "default",
-                  color: T.faint,
-                }}
-              >
-                <ChevronRight style={{ width: 14, height: 14 }} />
-              </button>
-            </div>
           </div>
         </div>
       )}

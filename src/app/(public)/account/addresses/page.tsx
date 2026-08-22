@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Plus, Pencil, Trash2, Check } from "lucide-react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { useAuth } from "@/contexts/auth-context";
 
@@ -45,11 +46,11 @@ const EMPTY: Omit<Address, "id" | "is_default"> = {
 };
 
 export default function AddressesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const supabase = createClient();
 
   const [addresses, setAddresses] = useState<Address[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY);
@@ -57,25 +58,38 @@ export default function AddressesPage() {
 
   const fetchAddresses = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("addresses")
       .select("*")
+      .eq("user_id", user.id)
       .order("is_default", { ascending: false })
       .order("created_at", { ascending: false });
-    setAddresses(data || []);
-    setLoading(false);
+    if (error) {
+      toast.error("Couldn't load your addresses. Please try again.");
+    } else {
+      setAddresses(data || []);
+    }
+    setFetching(false);
   }, [user, supabase]);
 
   useEffect(() => {
-    fetchAddresses();
+    const load = async () => {
+      await fetchAddresses();
+    };
+    void load();
   }, [fetchAddresses]);
+
+  // Derived: spinner shows while auth resolves, or while a signed-in
+  // user's addresses are being fetched. No user => nothing to load.
+  const loading = authLoading || (!!user && fetching);
 
   const handleSave = async () => {
     if (!user || !form.recipient || !form.line1 || !form.city) return;
     setSaving(true);
 
+    let error;
     if (editingId) {
-      await supabase
+      ({ error } = await supabase
         .from("addresses")
         .update({
           label: form.label,
@@ -86,10 +100,10 @@ export default function AddressesPage() {
           postal_code: form.postal_code,
           phone: form.phone,
         })
-        .eq("id", editingId);
+        .eq("id", editingId));
     } else {
       const isFirst = addresses.length === 0;
-      await supabase.from("addresses").insert({
+      ({ error } = await supabase.from("addresses").insert({
         user_id: user.id,
         label: form.label,
         recipient: form.recipient,
@@ -99,32 +113,51 @@ export default function AddressesPage() {
         postal_code: form.postal_code,
         phone: form.phone,
         is_default: isFirst,
-      });
+      }));
+    }
+
+    setSaving(false);
+
+    if (error) {
+      // Keep the form open so nothing the user typed is lost.
+      toast.error("Couldn't save the address. Please try again.");
+      return;
     }
 
     setForm(EMPTY);
     setShowForm(false);
     setEditingId(null);
-    setSaving(false);
     fetchAddresses();
   };
 
   const handleSetDefault = async (id: string) => {
     // Unset all defaults first
-    await supabase
+    const { error: unsetError } = await supabase
       .from("addresses")
       .update({ is_default: false })
       .eq("user_id", user!.id);
+    if (unsetError) {
+      toast.error("Couldn't update the default address. Please try again.");
+      return;
+    }
     // Set this one
-    await supabase
+    const { error: setError } = await supabase
       .from("addresses")
       .update({ is_default: true })
       .eq("id", id);
+    if (setError) {
+      toast.error("Couldn't update the default address. Please try again.");
+    }
     fetchAddresses();
   };
 
   const handleDelete = async (id: string) => {
-    await supabase.from("addresses").delete().eq("id", id);
+    if (!window.confirm("Delete this address? This can't be undone.")) return;
+    const { error } = await supabase.from("addresses").delete().eq("id", id);
+    if (error) {
+      toast.error("Couldn't delete the address. Please try again.");
+      return;
+    }
     fetchAddresses();
   };
 

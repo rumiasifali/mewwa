@@ -12,7 +12,12 @@ function LoginForm() {
   const [loading, setLoading] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || "/admin";
+  // Only same-site relative paths — blocks /login?redirectTo=https://evil.com
+  const rawRedirect = searchParams.get("redirectTo") || "/admin";
+  const redirectTo =
+    rawRedirect.startsWith("/") && !rawRedirect.startsWith("//") && !rawRedirect.includes("\\")
+      ? rawRedirect
+      : "/admin";
 
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
