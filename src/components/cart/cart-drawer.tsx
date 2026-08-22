@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { X, Minus, Plus, ShoppingBag, Search, Loader2 } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
 import { useAuth } from "@/contexts/auth-context";
@@ -352,9 +353,11 @@ export function CartDrawer() {
                     onClick={closeCart}
                   >
                     {item.imageUrl ? (
-                      <img
+                      <Image
                         src={item.imageUrl}
                         alt={item.productName}
+                        width={72}
+                        height={72}
                         style={{
                           width: 72,
                           height: 72,

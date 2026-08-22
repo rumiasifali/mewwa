@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { ImagePlus, Loader2, X, Upload } from "lucide-react";
+import Image from "next/image";
+import { Loader2, X, Upload } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { deleteImageFromUrl } from "@/lib/supabase/storage";
 
@@ -104,7 +105,7 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
       onChange(urlData.publicUrl);
       setUploading(false);
     },
-    [supabase, onChange, value]
+    [supabase, onChange, value, convertToJpeg]
   );
 
   // Drag and drop handlers
@@ -155,9 +156,11 @@ export function ImageUpload({ value, onChange }: ImageUploadProps) {
     return (
       <div className="space-y-2">
         <div className="relative inline-block">
-          <img
+          <Image
             src={value}
             alt="Product"
+            width={128}
+            height={128}
             className="w-32 h-32 rounded-xl object-cover border border-border"
           />
           <button

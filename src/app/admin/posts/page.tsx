@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { deleteImageFromUrl } from "@/lib/supabase/storage";
 import { Input } from "@/components/ui/input";
@@ -382,9 +383,11 @@ export default function AdminPostsPage() {
                 }}
               >
                 {post.cover_image ? (
-                  <img
+                  <Image
                     src={post.cover_image}
                     alt={post.title}
+                    width={56}
+                    height={38}
                     style={{
                       width: "100%",
                       height: "100%",

@@ -17,15 +17,37 @@ export interface TestimonialWithOrder extends Testimonial {
   product_name: string | null;
 }
 
-export async function getTestimonials(): Promise<TestimonialWithOrder[]> {
-  if (!(await requireAdmin())) return [];
-  const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("testimonials")
-    .select("*")
-    .order("created_at", { ascending: false });
+export type TestimonialStatus = "pending" | "approved" | "rejected";
 
-  if (error || !data) return [];
+export interface TestimonialPageResult {
+  items: TestimonialWithOrder[];
+  total: number;
+}
+
+export interface TestimonialCounts {
+  pending: number;
+  approved: number;
+  rejected: number;
+}
+
+export async function getTestimonials(
+  status: TestimonialStatus,
+  page: number,
+  pageSize = 20
+): Promise<TestimonialPageResult> {
+  if (!(await requireAdmin())) return { items: [], total: 0 };
+  const supabase = await createClient();
+  const from = Math.max(0, (page - 1) * pageSize);
+  const { data, error, count } = await supabase
+    .from("testimonials")
+    .select("*", { count: "exact" })
+    .eq("status", status)
+    .order("created_at", { ascending: false })
+    .range(from, from + pageSize - 1);
+
+  if (error || !data) return { items: [], total: 0 };
+
+  const total = count ?? 0;
 
   // Collect unique emails to look up matching orders
   const emails = [...new Set(data.map((t: Testimonial) => t.email).filter(Boolean))];
@@ -75,11 +97,35 @@ export async function getTestimonials(): Promise<TestimonialWithOrder[]> {
     }
   }
 
-  return data.map((t: Testimonial) => ({
+  const items = data.map((t: Testimonial) => ({
     ...t,
     matched_order: ordersByEmail[t.email] || null,
     product_name: t.product_id ? productsById[t.product_id] ?? null : null,
   }));
+
+  return { items, total };
+}
+
+export async function getTestimonialCounts(): Promise<TestimonialCounts> {
+  const empty: TestimonialCounts = { pending: 0, approved: 0, rejected: 0 };
+  if (!(await requireAdmin())) return empty;
+  const supabase = await createClient();
+
+  const statuses: TestimonialStatus[] = ["pending", "approved", "rejected"];
+  const results = await Promise.all(
+    statuses.map((status) =>
+      supabase
+        .from("testimonials")
+        .select("id", { count: "exact", head: true })
+        .eq("status", status)
+    )
+  );
+
+  return {
+    pending: results[0].count ?? 0,
+    approved: results[1].count ?? 0,
+    rejected: results[2].count ?? 0,
+  };
 }
 
 export async function updateTestimonialStatusAction(

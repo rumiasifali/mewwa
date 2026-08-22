@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/contexts/auth-context";
-import { LogOut, MessageCircle } from "lucide-react";
+import { LogOut } from "lucide-react";
 
 const C = {
   ink: "#1A1512",

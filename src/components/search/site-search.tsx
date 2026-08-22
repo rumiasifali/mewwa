@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Search, X, Loader2, ArrowRight } from "lucide-react";
 import type { SearchResponse, SearchResult, SearchResultType } from "@/types";
 
@@ -433,9 +434,11 @@ function ResultRow({
     >
       {/* Thumbnail */}
       {item.image_url ? (
-        <img
+        <Image
           src={item.image_url}
           alt=""
+          width={36}
+          height={36}
           style={{
             width: 36,
             height: 36,

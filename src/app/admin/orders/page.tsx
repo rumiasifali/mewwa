@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { ExternalLink } from "lucide-react";
 import { toast } from "sonner";
@@ -111,30 +112,81 @@ export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  // Raw input value; `search` is the debounced term the queries use
+  const [searchInput, setSearchInput] = useState("");
   const [search, setSearch] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [selectedItems, setSelectedItems] = useState<OrderItem[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
+  // Server-side counts: total rows matching the active filter+search (drives
+  // the pager) and per-status totals for the tab counts (whole table).
+  const [filteredCount, setFilteredCount] = useState(0);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   // "Synced ago" label — computed when a fetch completes (render must stay
   // pure, so we don't read Date.now() during render).
   const [syncedAgo, setSyncedAgo] = useState("just now");
+  // Guards against a slow, stale page fetch overwriting a newer one
+  const requestSeq = useRef(0);
+
+  // Debounce the search box ~300ms before it becomes the query term
+  useEffect(() => {
+    const t = setTimeout(() => {
+      setSearch(searchInput);
+      setCurrentPage(1);
+    }, 300);
+    return () => clearTimeout(t);
+  }, [searchInput]);
 
   const fetchOrders = useCallback(async () => {
-    const { data } = await supabase
+    const seq = ++requestSeq.current;
+    let query = supabase
       .from("orders")
-      .select("*")
-      .order("created_at", { ascending: false });
+      .select("*", { count: "exact" })
+      .order("created_at", { ascending: false })
+      .range((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE - 1);
+    if (filter !== "all") {
+      query = query.eq("status", filter);
+    }
+    // Strip PostgREST or-syntax metacharacters before interpolating
+    const term = search.trim().replace(/[,()]/g, "");
+    if (term) {
+      query = query.or(
+        `ref.ilike.%${term}%,customer_name.ilike.%${term}%,customer_phone.ilike.%${term}%,items_summary.ilike.%${term}%`
+      );
+    }
+    const { data, count } = await query;
+    if (seq !== requestSeq.current) return;
     setOrders(data || []);
+    setFilteredCount(count ?? 0);
     setLoading(false);
     setSyncedAgo("just now");
+  }, [supabase, currentPage, filter, search]);
+
+  // Tab counts reflect the whole table (one head-count query per status),
+  // refreshed together with each page fetch.
+  const fetchCounts = useCallback(async () => {
+    const results = await Promise.all(
+      STATUSES.map((s) => {
+        let q = supabase
+          .from("orders")
+          .select("*", { count: "exact", head: true });
+        if (s !== "all") q = q.eq("status", s);
+        return q;
+      })
+    );
+    const next: Record<string, number> = {};
+    STATUSES.forEach((s, i) => {
+      next[s] = results[i].count ?? 0;
+    });
+    setStatusCounts(next);
   }, [supabase]);
 
   useEffect(() => {
     const load = async () => {
-      await fetchOrders();
+      await Promise.all([fetchOrders(), fetchCounts()]);
     };
     void load();
-  }, [fetchOrders]);
+  }, [fetchOrders, fetchCounts]);
 
   // Fetch items for selected order (clearing on deselect happens in the
   // click/cancel handlers so the effect only syncs from Supabase)
@@ -159,7 +211,7 @@ export default function AdminOrdersPage() {
       toast.error(`Could not update order: ${error.message}`);
       return;
     }
-    fetchOrders();
+    void Promise.all([fetchOrders(), fetchCounts()]);
   };
 
   const cancelOrder = async (orderId: string) => {
@@ -172,44 +224,25 @@ export default function AdminOrdersPage() {
       toast.error(`Could not cancel order: ${error.message}`);
       return;
     }
-    fetchOrders();
+    void Promise.all([fetchOrders(), fetchCounts()]);
     if (selectedId === orderId) {
       setSelectedId(null);
       setSelectedItems([]);
     }
   };
 
-  const filtered = orders.filter((o) => {
-    if (filter !== "all" && o.status !== filter) return false;
-    if (!search.trim()) return true;
-    const q = search.toLowerCase();
-    return (
-      o.ref.toLowerCase().includes(q) ||
-      o.customer_name.toLowerCase().includes(q) ||
-      o.customer_phone?.toLowerCase().includes(q) ||
-      o.items_summary?.toLowerCase().includes(q)
-    );
-  });
-
   const selected = orders.find((o) => o.id === selectedId);
-  const statusCounts: Record<string, number> = {};
-  orders.forEach((o) => {
-    statusCounts[o.status] = (statusCounts[o.status] || 0) + 1;
-  });
-  const totalCount = orders.length;
+  const allCount = statusCounts.all ?? 0;
 
-  // Pagination
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const paginatedOrders = filtered.slice(
-    (currentPage - 1) * PAGE_SIZE,
-    currentPage * PAGE_SIZE
-  );
-  const showFrom = filtered.length === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
-  const showTo = Math.min(currentPage * PAGE_SIZE, filtered.length);
+  // Pagination (filteredCount is the server-side total for the active
+  // filter + search, so the pager reflects the whole table)
+  const totalPages = Math.max(1, Math.ceil(filteredCount / PAGE_SIZE));
+  const showFrom = filteredCount === 0 ? 0 : (currentPage - 1) * PAGE_SIZE + 1;
+  const showTo = Math.min(currentPage * PAGE_SIZE, filteredCount);
 
-  // Reset to page 1 if the filtered list shrinks below the current page
+  // Reset to page 1 if the filtered total shrinks below the current page
   // start (render-time state adjustment, avoids an effect pass)
-  if (currentPage > 1 && (currentPage - 1) * PAGE_SIZE >= filtered.length) {
+  if (currentPage > 1 && (currentPage - 1) * PAGE_SIZE >= filteredCount) {
     setCurrentPage(1);
   }
 
@@ -267,10 +300,7 @@ export default function AdminOrdersPage() {
         >
           {/* #4 — pill buttons */}
           {STATUSES.map((s) => {
-            const count =
-              s === "all"
-                ? totalCount
-                : statusCounts[s] || 0;
+            const count = statusCounts[s] ?? 0;
             return (
               <button
                 key={s}
@@ -326,11 +356,8 @@ export default function AdminOrdersPage() {
           {/* #7 — search input */}
           <input
             type="text"
-            value={search}
-            onChange={(e) => {
-              setSearch(e.target.value);
-              setCurrentPage(1);
-            }}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Order ref, name or phone..."
             style={{
               width: "100%",
@@ -366,7 +393,7 @@ export default function AdminOrdersPage() {
         <div style={{ marginTop: 32, textAlign: "center", fontSize: 13, color: "#9A9086" }}>
           Loading orders...
         </div>
-      ) : filtered.length === 0 ? (
+      ) : orders.length === 0 ? (
         <div
           style={{
             marginTop: 32,
@@ -379,9 +406,11 @@ export default function AdminOrdersPage() {
         >
           <p style={{ fontSize: 15, fontWeight: 600, margin: 0, color: "#1A1512" }}>No orders found</p>
           <p style={{ fontSize: 13, color: "#9A9086", marginTop: 6 }}>
-            {filter === "all"
-              ? "Orders will appear here when customers place them."
-              : `No ${(STATUS_LABELS[filter] || filter).toLowerCase()} orders right now.`}
+            {search.trim() && allCount > 0
+              ? "No orders match your search."
+              : filter !== "all" && allCount > 0
+                ? `No ${(STATUS_LABELS[filter] || filter).toLowerCase()} orders right now.`
+                : "Orders will appear here when customers place them."}
           </p>
         </div>
       ) : (
@@ -473,7 +502,7 @@ export default function AdminOrdersPage() {
             </div>
 
             {/* Table rows */}
-            {paginatedOrders.map((o) => (
+            {orders.map((o) => (
               <div
                 key={o.id}
                 onClick={() => {
@@ -571,7 +600,7 @@ export default function AdminOrdersPage() {
               }}
             >
               <span style={{ fontSize: 12, color: "#7C7268" }}>
-                {showFrom} &ndash; {showTo} of {filtered.length}
+                {showFrom} &ndash; {showTo} of {filteredCount}
               </span>
               {/* #54 — pagination with next arrow */}
               <div style={{ display: "flex", gap: 4 }}>
@@ -755,9 +784,12 @@ export default function AdminOrdersPage() {
                     }}
                   >
                     {it.image_url ? (
-                      <img
+                      <Image
                         src={it.image_url}
                         alt=""
+                        width={34}
+                        height={34}
+                        unoptimized
                         style={{
                           width: 34,
                           height: 34,

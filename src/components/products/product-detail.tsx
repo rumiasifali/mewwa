@@ -26,7 +26,7 @@ const ASSURANCE_ITEMS: { text: string; meta: string; href?: string }[] = [
 
 /* ───── inline WhatsApp SVG ───── */
 
-function WhatsAppIcon({ size = 20, color = "#fff" }: { size?: number; color?: string }) {
+function WhatsAppIcon({ size = 20 }: { size?: number }) {
   return (
     <svg
       width={size}
@@ -73,11 +73,6 @@ export function ProductDetail({
   ].filter(Boolean);
 
   const displayedImage = allImages[selectedImage] || product.image_url;
-
-  const perKgPrice =
-    currentWeight && currentWeight.grams > 0
-      ? ((currentWeight.price / currentWeight.grams) * 1000).toFixed(0)
-      : null;
 
   const categoryLabel =
     product.category

@@ -3,6 +3,7 @@
 export const dynamic = "force-dynamic";
 
 import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { deleteImageFromUrl } from "@/lib/supabase/storage";
 import { Loader2, Pencil, Trash2 } from "lucide-react";
@@ -41,24 +42,20 @@ export default function AdminCategoriesPage() {
       .order("sort_order");
 
     if (cats) {
-      // Fetch product counts per category
-      const { data: products } = await supabase
-        .from("products")
-        .select("category_id");
-
-      const countMap: Record<string, number> = {};
-      if (products) {
-        for (const p of products) {
-          if (p.category_id) {
-            countMap[p.category_id] = (countMap[p.category_id] || 0) + 1;
-          }
-        }
-      }
+      // Head-count products per category in parallel (no row transfer)
+      const countResults = await Promise.all(
+        cats.map((c: Category) =>
+          supabase
+            .from("products")
+            .select("id", { count: "exact", head: true })
+            .eq("category_id", c.id)
+        )
+      );
 
       setCategories(
-        cats.map((c: Category) => ({
+        cats.map((c: Category, i: number) => ({
           ...c,
-          product_count: countMap[c.id] || 0,
+          product_count: countResults[i].count ?? 0,
         }))
       );
     }
@@ -321,9 +318,11 @@ export default function AdminCategoriesPage() {
                     }}
                   >
                     {cat.image_url ? (
-                      <img
+                      <Image
                         src={cat.image_url}
                         alt={cat.name}
+                        width={56}
+                        height={44}
                         style={{
                           width: "100%",
                           height: "100%",

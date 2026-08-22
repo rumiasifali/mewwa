@@ -3,7 +3,7 @@
 import { useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Search, X, ChevronDown, Star, Check, Package, MessageCircle } from "lucide-react";
+import { Search, X, ChevronDown, Check, Package, MessageCircle } from "lucide-react";
 import { CatalogCard } from "@/components/products/catalog-card";
 import { getWhatsAppLink } from "@/lib/constants";
 import { useSiteSettings } from "@/contexts/site-settings-context";

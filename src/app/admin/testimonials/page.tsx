@@ -5,10 +5,11 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState, useCallback } from "react";
 import {
   getTestimonials,
+  getTestimonialCounts,
   updateTestimonialStatusAction,
   deleteTestimonialAction,
 } from "./actions";
-import type { TestimonialWithOrder } from "./actions";
+import type { TestimonialCounts, TestimonialWithOrder } from "./actions";
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -25,6 +26,8 @@ const warnBg = "#F7EBDA";
 const bodyDark = "#2E2721";
 
 type TabKey = "pending" | "approved" | "rejected";
+
+const PAGE_SIZE = 20;
 
 /* ── helpers ── */
 function daysAgo(dateStr: string): string {
@@ -44,23 +47,52 @@ function formatDeliveryDate(dateStr: string): string {
 }
 
 export default function AdminTestimonialsPage() {
-  const [testimonials, setTestimonials] = useState<TestimonialWithOrder[]>([]);
+  const [items, setItems] = useState<TestimonialWithOrder[]>([]);
+  const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState<TestimonialCounts>({
+    pending: 0,
+    approved: 0,
+    rejected: 0,
+  });
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<TabKey>("pending");
 
-  const fetchData = useCallback(async () => {
-    const data = await getTestimonials();
-    setTestimonials(data);
+  const fetchData = useCallback(async (tab: TabKey, pageNum: number) => {
+    const [pageResult, countsResult] = await Promise.all([
+      getTestimonials(tab, pageNum, PAGE_SIZE),
+      getTestimonialCounts(),
+    ]);
+    // If the current page emptied out (e.g. last item deleted), step back
+    if (pageResult.items.length === 0 && pageNum > 1 && pageResult.total > 0) {
+      setPage(Math.max(1, Math.ceil(pageResult.total / PAGE_SIZE)));
+      return;
+    }
+    setItems(pageResult.items);
+    setTotal(pageResult.total);
+    setCounts(countsResult);
     setLoading(false);
   }, []);
 
   useEffect(() => {
     const load = async () => {
-      await fetchData();
+      await fetchData(selectedTab, page);
     };
     void load();
-  }, [fetchData]);
+  }, [fetchData, selectedTab, page]);
+
+  function selectTab(tab: TabKey) {
+    if (tab === selectedTab) return;
+    setSelectedTab(tab);
+    setPage(1);
+    setLoading(true);
+  }
+
+  function goToPage(pageNum: number) {
+    setPage(pageNum);
+    setLoading(true);
+  }
 
   async function handleApprove(id: string, name: string) {
     setProcessingId(id);
@@ -70,7 +102,7 @@ export default function AdminTestimonialsPage() {
     } else {
       toast.error("Failed to approve review");
     }
-    await fetchData();
+    await fetchData(selectedTab, page);
     setProcessingId(null);
   }
 
@@ -82,7 +114,7 @@ export default function AdminTestimonialsPage() {
     } else {
       toast.error("Failed to reject review");
     }
-    await fetchData();
+    await fetchData(selectedTab, page);
     setProcessingId(null);
   }
 
@@ -95,27 +127,17 @@ export default function AdminTestimonialsPage() {
     } else {
       toast.error("Failed to delete review");
     }
-    await fetchData();
+    await fetchData(selectedTab, page);
     setProcessingId(null);
   }
 
-  const pending = testimonials.filter((t) => t.status === "pending");
-  const approved = testimonials.filter((t) => t.status === "approved");
-  const rejected = testimonials.filter((t) => t.status === "rejected");
-
-  const tabData: Record<TabKey, TestimonialWithOrder[]> = {
-    pending,
-    approved,
-    rejected,
-  };
-
   const tabs: { key: TabKey; label: string; count: number }[] = [
-    { key: "pending", label: "Pending", count: pending.length },
-    { key: "approved", label: "Approved", count: approved.length },
-    { key: "rejected", label: "Rejected", count: rejected.length },
+    { key: "pending", label: "Pending", count: counts.pending },
+    { key: "approved", label: "Approved", count: counts.approved },
+    { key: "rejected", label: "Rejected", count: counts.rejected },
   ];
 
-  const currentList = tabData[selectedTab];
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
     <div>
@@ -170,7 +192,7 @@ export default function AdminTestimonialsPage() {
             return (
               <span
                 key={tab.key}
-                onClick={() => setSelectedTab(tab.key)}
+                onClick={() => selectTab(tab.key)}
                 style={{
                   padding: "8px 14px",
                   fontSize: 12.5,
@@ -216,7 +238,7 @@ export default function AdminTestimonialsPage() {
             style={{ width: 22, height: 22, color: faint }}
           />
         </div>
-      ) : currentList.length === 0 ? (
+      ) : items.length === 0 ? (
         <div
           style={{
             textAlign: "center",
@@ -228,25 +250,82 @@ export default function AdminTestimonialsPage() {
           No {selectedTab} reviews
         </div>
       ) : (
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(2, 1fr)",
-            gap: 16,
-            marginTop: 22,
-          }}
-        >
-          {currentList.map((t) => (
-            <ReviewCard
-              key={t.id}
-              testimonial={t}
-              processing={processingId === t.id}
-              onApprove={() => handleApprove(t.id, t.name)}
-              onReject={() => handleReject(t.id, t.name)}
-              onDelete={() => handleDelete(t.id)}
-            />
-          ))}
-        </div>
+        <>
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(2, 1fr)",
+              gap: 16,
+              marginTop: 22,
+            }}
+          >
+            {items.map((t) => (
+              <ReviewCard
+                key={t.id}
+                testimonial={t}
+                processing={processingId === t.id}
+                onApprove={() => handleApprove(t.id, t.name)}
+                onReject={() => handleReject(t.id, t.name)}
+                onDelete={() => handleDelete(t.id)}
+              />
+            ))}
+          </div>
+
+          {/* Pagination */}
+          {total > PAGE_SIZE && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "flex-end",
+                gap: 10,
+                marginTop: 20,
+              }}
+            >
+              <span style={{ fontSize: 12.5, color: muted }}>
+                Page {page} of {totalPages}
+              </span>
+              <button
+                onClick={() => goToPage(page - 1)}
+                disabled={page <= 1}
+                style={{
+                  height: 32,
+                  padding: "0 14px",
+                  fontSize: 12.5,
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  background: "#fff",
+                  color: page <= 1 ? faint : body,
+                  border: "1px solid #DCD3C5",
+                  borderRadius: 2,
+                  cursor: page <= 1 ? "not-allowed" : "pointer",
+                  transition: "opacity .15s",
+                }}
+              >
+                Previous
+              </button>
+              <button
+                onClick={() => goToPage(page + 1)}
+                disabled={page >= totalPages}
+                style={{
+                  height: 32,
+                  padding: "0 14px",
+                  fontSize: 12.5,
+                  fontWeight: 500,
+                  fontFamily: "inherit",
+                  background: "#fff",
+                  color: page >= totalPages ? faint : body,
+                  border: "1px solid #DCD3C5",
+                  borderRadius: 2,
+                  cursor: page >= totalPages ? "not-allowed" : "pointer",
+                  transition: "opacity .15s",
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );
@@ -452,6 +531,27 @@ function ReviewCard({
             Reject
           </button>
         )}
+
+        {/* Delete - quiet text button */}
+        <button
+          onClick={onDelete}
+          disabled={processing}
+          style={{
+            height: 36,
+            padding: "0 8px",
+            fontSize: 12.5,
+            fontWeight: 500,
+            fontFamily: "inherit",
+            background: "none",
+            color: warn,
+            border: "none",
+            cursor: processing ? "not-allowed" : "pointer",
+            opacity: processing ? 0.5 : 1,
+            transition: "opacity .15s",
+          }}
+        >
+          Delete
+        </button>
 
         {/* Product name link on far right */}
         <span

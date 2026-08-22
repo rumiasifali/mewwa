@@ -5,7 +5,8 @@ export const dynamic = "force-dynamic";
 import { useEffect, useState, useCallback } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { deleteImagesFromUrls } from "@/lib/supabase/storage";
-import { Loader2, Pencil, Trash2, Search, X, Plus } from "lucide-react";
+import Image from "next/image";
+import { Loader2, Pencil, Search, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { ImageUpload } from "@/components/admin/image-upload";
 
@@ -524,7 +525,11 @@ export default function AdminProductsPage() {
       ...form,
       slug: form.slug || generateSlug(form.name),
       // Strip the client-only `live` key before persisting
-      weights: form.weights.map(({ live, ...w }) => w),
+      weights: form.weights.map((w) => {
+        const rest = { ...w };
+        delete rest.live;
+        return rest;
+      }),
       // Drop empty gallery slots
       images: form.images.filter((img) => img !== ""),
       stock:
@@ -827,7 +832,7 @@ export default function AdminProductsPage() {
             </button>
             <button
               type="button"
-              onClick={(e) => {
+              onClick={() => {
                 const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
                 handleSave(fakeEvent);
               }}
@@ -851,7 +856,7 @@ export default function AdminProductsPage() {
             </button>
             <button
               type="button"
-              onClick={(e) => {
+              onClick={() => {
                 const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
                 handleSave(fakeEvent);
               }}
@@ -1722,9 +1727,11 @@ export default function AdminProductsPage() {
                   }}
                 >
                   {form.image_url && (
-                    <img
+                    <Image
                       src={form.image_url}
                       alt="Preview"
+                      width={300}
+                      height={300}
                       style={{
                         width: "100%",
                         height: "100%",
@@ -2315,9 +2322,11 @@ export default function AdminProductsPage() {
                   }}
                 >
                   {product.image_url ? (
-                    <img
+                    <Image
                       src={product.image_url}
                       alt={product.name}
+                      width={34}
+                      height={34}
                       style={{
                         width: "100%",
                         height: "100%",

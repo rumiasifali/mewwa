@@ -32,7 +32,6 @@ const LINE = "#E7E1D7";
 const MUTED = "#7C7268";
 const MUTED2 = "#9A9086";
 const BODY = "#4A4139";
-const FAINT = "#B0A69A";
 const INPUT_BORDER = "#DCD3C5";
 const HINT_COLOR = "#B0A69A";
 
