@@ -11,21 +11,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Burst guard (per instance) + DB-backed cap on recent orders. Blocks
-  // accidental double-submits and runaway clients burning order refs.
+  // Burst guard (per instance) + atomic DB-backed cap. Blocks accidental
+  // double-submits and runaway clients burning order refs.
   if (!checkApiRateLimit(`orders:${user.id}`, 3, 60_000)) {
     return NextResponse.json(
       { error: "Too many orders — please wait a minute and try again" },
       { status: 429 }
     );
   }
-  const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-  const { count: recentCount } = await supabase
-    .from("orders")
-    .select("id", { count: "exact", head: true })
-    .eq("customer_id", user.id)
-    .gte("created_at", tenMinutesAgo);
-  if ((recentCount || 0) >= 5) {
+  const { data: allowed, error: limitError } = await supabase.rpc("claim_rate_limit", {
+    p_key: `orders:${user.id}`,
+    p_max: 5,
+    p_window_seconds: 600,
+  });
+  if (limitError || allowed === false) {
     return NextResponse.json(
       { error: "Too many recent orders — please contact us on WhatsApp if this is intentional" },
       { status: 429 }

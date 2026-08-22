@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { getPosts } from "@/lib/data";
+import { NewsletterForm } from "./newsletter-form";
 
 export const revalidate = 60;
 
@@ -365,39 +366,7 @@ export default async function BlogPage() {
             it costs and why. Roughly six emails a year.
           </p>
         </div>
-        <div style={{ display: "flex", gap: 8 }}>
-          <input
-            type="email"
-            placeholder="you@email.com"
-            style={{
-              flex: 1,
-              height: 50,
-              padding: "0 14px",
-              border: "1px solid #DCD3C5",
-              background: "#fff",
-              borderRadius: 2,
-              fontSize: 14,
-              fontFamily: "Geist, sans-serif",
-              outline: "none",
-            }}
-          />
-          <span
-            style={{
-              cursor: "pointer",
-              display: "inline-flex",
-              alignItems: "center",
-              height: 50,
-              padding: "0 22px",
-              background: "#1A1512",
-              color: "#fff",
-              fontSize: 13.5,
-              fontWeight: 600,
-              borderRadius: 2,
-            }}
-          >
-            Subscribe
-          </span>
-        </div>
+        <NewsletterForm />
       </div>
 
       {/* Empty state */}

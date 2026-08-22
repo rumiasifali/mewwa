@@ -17,6 +17,7 @@ const instrumentSerif = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://qaaq.pk"),
   title: {
     default: "QAAQ | Premium Dry Fruits & Nuts",
     template: "%s | QAAQ",

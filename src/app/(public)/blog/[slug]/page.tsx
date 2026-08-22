@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
-import { getPostBySlug } from "@/lib/data";
+import { getPostBySlug, getPosts } from "@/lib/data";
 import { ArrowLeft, Clock } from "lucide-react";
+import DOMPurify from "isomorphic-dompurify";
 
 export const revalidate = 60;
 
@@ -15,6 +16,29 @@ export default async function BlogPostPage({
   const post = await getPostBySlug(slug);
 
   if (!post) notFound();
+
+  const allPosts = await getPosts();
+  const relatedPosts = allPosts.filter((p) => p.slug !== slug).slice(0, 3);
+
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://qaaq.pk";
+  const postUrl = `${siteUrl}/blog/${slug}`;
+  const shareLinks = [
+    {
+      label: "X",
+      aria: "Share on X",
+      href: `https://x.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(post.title)}`,
+    },
+    {
+      label: "FB",
+      aria: "Share on Facebook",
+      href: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}`,
+    },
+    {
+      label: "WA",
+      aria: "Share on WhatsApp",
+      href: `https://wa.me/?text=${encodeURIComponent(`${post.title} ${postUrl}`)}`,
+    },
+  ];
 
   const textContent = (post.content || "").replace(/<[^>]*>/g, "");
   const wordCount = textContent.split(/\s+/).length;
@@ -152,9 +176,13 @@ export default async function BlogPostPage({
                 Share
               </div>
               <div style={{ marginTop: "12px", display: "flex", gap: "6px" }}>
-                {["X", "FB", "LI"].map((s) => (
-                  <span
-                    key={s}
+                {shareLinks.map((s) => (
+                  <a
+                    key={s.label}
+                    href={s.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={s.aria}
                     style={{
                       width: 32,
                       height: 32,
@@ -167,10 +195,11 @@ export default async function BlogPostPage({
                       color: "#4A4139",
                       background: "#fff",
                       cursor: "pointer",
+                      textDecoration: "none",
                     }}
                   >
-                    {s}
-                  </span>
+                    {s.label}
+                  </a>
                 ))}
               </div>
             </div>
@@ -180,7 +209,9 @@ export default async function BlogPostPage({
           <div>
             <div
               className="blog-content"
-              dangerouslySetInnerHTML={{ __html: post.content || "" }}
+              dangerouslySetInnerHTML={{
+                __html: DOMPurify.sanitize(post.content || ""),
+              }}
             />
 
             {/* Mentioned product CTA */}
@@ -232,24 +263,90 @@ export default async function BlogPostPage({
         </div>
 
         {/* Keep reading / related posts section */}
-        <div
-          style={{
-            margin: "88px 0 110px",
-            paddingTop: "32px",
-            borderTop: "1px solid #1A1512",
-          }}
-        >
-          <h2
+        {relatedPosts.length > 0 && (
+          <div
             style={{
-              margin: 0,
-              fontSize: "32px",
-              fontWeight: 800,
-              letterSpacing: "-.04em",
+              margin: "88px 0 110px",
+              paddingTop: "32px",
+              borderTop: "1px solid #1A1512",
             }}
           >
-            Keep reading
-          </h2>
-        </div>
+            <h2
+              style={{
+                margin: 0,
+                fontSize: "32px",
+                fontWeight: 800,
+                letterSpacing: "-.04em",
+              }}
+            >
+              Keep reading
+            </h2>
+            <div
+              className="blog-related-grid"
+              style={{
+                marginTop: "32px",
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 1,
+                background: "#E7E1D7",
+                borderTop: "1px solid #E7E1D7",
+                borderBottom: "1px solid #E7E1D7",
+              }}
+            >
+              {relatedPosts.map((related) => (
+                <Link
+                  key={related.id}
+                  href={`/blog/${related.slug}`}
+                  className="qaaq-zoom"
+                  style={{
+                    display: "block",
+                    background: "#FBF9F5",
+                    padding: "20px 20px 26px",
+                    textDecoration: "none",
+                    color: "inherit",
+                    cursor: "pointer",
+                  }}
+                >
+                  <span style={{ fontSize: "11.5px", color: "#B0A69A" }}>
+                    {new Date(
+                      related.published_at || related.created_at
+                    ).toLocaleDateString("en-US", {
+                      day: "numeric",
+                      month: "short",
+                      year: "numeric",
+                    })}
+                  </span>
+                  <h3
+                    style={{
+                      fontSize: "21px",
+                      fontWeight: 650,
+                      letterSpacing: "-.03em",
+                      lineHeight: 1.22,
+                      marginTop: "10px",
+                      marginBottom: 0,
+                      color: "#1A1512",
+                    }}
+                  >
+                    {related.title}
+                  </h3>
+                  {related.excerpt && (
+                    <p
+                      style={{
+                        fontSize: "13.5px",
+                        lineHeight: 1.6,
+                        color: "#7C7268",
+                        marginTop: "9px",
+                        marginBottom: 0,
+                      }}
+                    >
+                      {related.excerpt}
+                    </p>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Back to journal */}
         <Link
@@ -283,6 +380,14 @@ export default async function BlogPostPage({
           }
           .blog-article-spacer {
             display: none !important;
+          }
+          .blog-related-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+        }
+        @media (max-width: 639px) {
+          .blog-related-grid {
+            grid-template-columns: 1fr !important;
           }
         }
       `}</style>

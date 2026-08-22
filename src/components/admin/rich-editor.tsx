@@ -8,6 +8,7 @@ import TextAlign from "@tiptap/extension-text-align";
 import Placeholder from "@tiptap/extension-placeholder";
 import TiptapImage from "@tiptap/extension-image";
 import { useCallback, useEffect } from "react";
+import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import {
   Bold,
@@ -33,6 +34,31 @@ interface RichEditorProps {
   value: string;
   onChange: (html: string) => void;
 }
+
+// Only these schemes may be stored in post HTML — blocks javascript:, data:, etc.
+const ALLOWED_LINK_PROTOCOLS = ["http:", "https:", "mailto:"];
+
+function isSafeLinkUrl(url: string): boolean {
+  // Relative paths are fine, but "//host" is protocol-relative — not a path.
+  if (url.startsWith("/")) return !url.startsWith("//");
+  try {
+    return ALLOWED_LINK_PROTOCOLS.includes(new URL(url).protocol);
+  } catch {
+    return false;
+  }
+}
+
+// Only image extensions may land in the public bucket — a spoofed name like
+// "x.html" would otherwise be served as HTML (stored XSS).
+const ALLOWED_IMAGE_EXT: Record<string, string> = {
+  jpg: "image/jpeg",
+  jpeg: "image/jpeg",
+  png: "image/png",
+  webp: "image/webp",
+  gif: "image/gif",
+};
+
+const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
 
 function ToolbarButton({
   onClick,
@@ -86,6 +112,8 @@ export function RichEditor({ value, onChange }: RichEditorProps) {
         },
       }),
     ],
+    // Required under Next.js SSR (TipTap v3) to avoid hydration mismatches
+    immediatelyRender: false,
     content: value || "",
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
@@ -107,10 +135,13 @@ export function RichEditor({ value, onChange }: RichEditorProps) {
 
   const addLink = useCallback(() => {
     if (!editor) return;
-    const url = window.prompt("Enter URL:");
-    if (url) {
-      editor.chain().focus().setLink({ href: url }).run();
+    const url = window.prompt("Enter URL:")?.trim();
+    if (!url) return;
+    if (!isSafeLinkUrl(url)) {
+      toast.error("Only http(s) links are allowed");
+      return;
     }
+    editor.chain().focus().setLink({ href: url }).run();
   }, [editor]);
 
   const addImage = useCallback(async () => {
@@ -123,15 +154,27 @@ export function RichEditor({ value, onChange }: RichEditorProps) {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (!file) return;
 
-      const ext = file.name.split(".").pop() || "jpg";
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error("Image is too large — maximum size is 5MB.");
+        return;
+      }
+      if (!file.type.startsWith("image/")) {
+        toast.error("Only image files can be uploaded.");
+        return;
+      }
+
+      // Derive the storage extension from the whitelist, never the raw filename
+      const rawExt = (file.name.split(".").pop() || "").toLowerCase();
+      const ext = ALLOWED_IMAGE_EXT[rawExt] ? rawExt : "jpg";
       const fileName = `posts/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`;
 
       const { data, error } = await supabase.storage
         .from("product-images")
-        .upload(fileName, file);
+        .upload(fileName, file, { contentType: ALLOWED_IMAGE_EXT[ext] });
 
       if (error) {
         console.error("Image upload error:", error);
+        toast.error(`Image upload failed: ${error.message}`);
         return;
       }
 

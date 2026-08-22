@@ -8,7 +8,24 @@ const supabaseHost = (() => {
   }
 })();
 
+// 'unsafe-inline' scripts are required by Next.js without nonce
+// plumbing; the CSP still pins every source to self + Supabase, which
+// blocks external script injection and data exfiltration targets.
+const csp = [
+  "default-src 'self'",
+  `script-src 'self' 'unsafe-inline'${process.env.NODE_ENV === "development" ? " 'unsafe-eval'" : ""}`,
+  "style-src 'self' 'unsafe-inline'",
+  `img-src 'self' data: blob: https://${supabaseHost}`,
+  "font-src 'self' data:",
+  `connect-src 'self' https://${supabaseHost} wss://${supabaseHost}`,
+  "object-src 'none'",
+  "base-uri 'self'",
+  "form-action 'self'",
+  "frame-ancestors 'none'",
+].join("; ");
+
 const securityHeaders = [
+  { key: "Content-Security-Policy", value: csp },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "X-Frame-Options", value: "DENY" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },

@@ -1,7 +1,6 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { checkRateLimit, recordSubmissionAttempt } from "@/lib/supabase/rate-limit";
 import { headers } from "next/headers";
 
 interface SubmitContactMessageRequest {
@@ -43,20 +42,26 @@ export async function submitContactMessage(data: SubmitContactMessageRequest) {
       console.warn("Could not get client IP:", e);
     }
 
-    // Check rate limits
-    const rateLimit = await checkRateLimit(ip, data.email);
-    if (!rateLimit.allowed) {
+    // Atomic, DB-backed rate limits (per IP and per email)
+    const supabase = await createClient();
+    const email = data.email.trim().toLowerCase();
+    const claims = await Promise.all([
+      ip !== "unknown"
+        ? supabase.rpc("claim_rate_limit", { p_key: `contact:ip:${ip}`, p_max: 5, p_window_seconds: 3600 })
+        : Promise.resolve({ data: true, error: null }),
+      supabase.rpc("claim_rate_limit", { p_key: `contact:email:${email}`, p_max: 5, p_window_seconds: 86400 }),
+    ]);
+    if (claims.some((c) => c.error || c.data === false)) {
       return {
         success: false,
-        error: rateLimit.reason || "Too many submissions. Please try again later.",
+        error: "Too many submissions. Please try again later.",
       };
     }
 
     // Create contact message
-    const supabase = await createClient();
     const { error } = await supabase.from("contact_messages").insert({
       name: data.name.trim(),
-      email: data.email.trim().toLowerCase(),
+      email,
       subject: data.subject?.trim() || null,
       message,
       ip_address: ip,
@@ -64,15 +69,7 @@ export async function submitContactMessage(data: SubmitContactMessageRequest) {
 
     if (error) {
       console.error("Error creating contact message:", error);
-      return { success: false, error: `Failed to send: ${error.message}` };
-    }
-
-    // Record submission for rate limiting
-    try {
-      await recordSubmissionAttempt(ip, data.email);
-    } catch (e) {
-      console.warn("Could not record submission attempt:", e);
-      // Don't fail the whole request if recording fails
+      return { success: false, error: "Failed to send your message. Please try again." };
     }
 
     return { success: true };
